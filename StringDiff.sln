@@ -1,0 +1,28 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 17
+VisualStudioVersion = 17.0.31903.59
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DimonSmart.StringDiff", "DimonSmart.StringDiff\DimonSmart.StringDiff.csproj", "{D4616AAC-2355-433F-9A56-BBE9B0D57FB1}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DimonSmart.StringDiffTests", "DimonSmart.StringDiffTests\DimonSmart.StringDiffTests.csproj", "{627C5033-4FF7-4EFE-83C6-F69F4CD5D953}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{D4616AAC-2355-433F-9A56-BBE9B0D57FB1}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{D4616AAC-2355-433F-9A56-BBE9B0D57FB1}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{D4616AAC-2355-433F-9A56-BBE9B0D57FB1}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{D4616AAC-2355-433F-9A56-BBE9B0D57FB1}.Release|Any CPU.Build.0 = Release|Any CPU
+		{627C5033-4FF7-4EFE-83C6-F69F4CD5D953}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{627C5033-4FF7-4EFE-83C6-F69F4CD5D953}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{627C5033-4FF7-4EFE-83C6-F69F4CD5D953}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{627C5033-4FF7-4EFE-83C6-F69F4CD5D953}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+EndGlobal
