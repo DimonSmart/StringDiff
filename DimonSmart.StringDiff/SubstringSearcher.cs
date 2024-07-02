@@ -1,33 +1,29 @@
-﻿namespace DimonSmart.StringDiff;
-
-public static class SubstringSearcher
+﻿public static class SubstringSearcher
 {
-    public record SubstringResult(int SourceStartIndex, int DestinationStartIndex, int Length);
+    public record SubstringResult(int SourceStartIndex, int TargetStartIndex, int Length);
 
-    public static SubstringResult LongestCommonSubstring(string sourceString, string destinationString)
+    public static SubstringResult LongestCommonSubstring(string source, string target)
     {
-        int[,] dp = new int[sourceString.Length + 1, destinationString.Length + 1];
-        int maxLength = 0;
-        int sourceEndAt = 0;
-        int destinationStartIndex = 0;
+        var dp = new int[source.Length + 1, target.Length + 1];
+        var maxLength = 0;
+        var sourceEndAt = 0;
+        var targetStartIndex = 0;
 
-        for (int i = 1; i <= sourceString.Length; i++)
+        for (var i = 1; i <= source.Length; i++)
         {
-            for (int j = 1; j <= destinationString.Length; j++)
+            for (int j = 1; j <= target.Length; j++)
             {
-                if (sourceString[i - 1] == destinationString[j - 1])
+                if (source[i - 1] == target[j - 1])
                 {
                     dp[i, j] = dp[i - 1, j - 1] + 1;
-                    if (dp[i, j] > maxLength)
-                    {
-                        maxLength = dp[i, j];
-                        sourceEndAt = i;
-                        destinationStartIndex = j - maxLength;
-                    }
+                    if (dp[i, j] <= maxLength) continue;
+                    maxLength = dp[i, j];
+                    sourceEndAt = i;
+                    targetStartIndex = j - maxLength;
                 }
             }
         }
 
-        return new SubstringResult(sourceEndAt - maxLength, destinationStartIndex, maxLength);
+        return new SubstringResult(sourceEndAt - maxLength, targetStartIndex, maxLength);
     }
 }

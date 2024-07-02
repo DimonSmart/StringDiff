@@ -1,37 +1,41 @@
-﻿namespace DimonSmart.StringDiff;
-
-public class StringDiff : IStringDiff
+﻿namespace DimonSmart.StringDiff
 {
-    public IReadOnlyCollection<DiffChunk> GetDiff(string sourceString, string destinationString)
+    public class StringDiff : IStringDiff
     {
-        return GetDiff(sourceString, destinationString);
-    }
-
-    public IEnumerable<DiffChunk> GetDiff(string sourceString, string destinationString, int offset)
-    { 
-        var result = new List<DiffChunk>();
-        if (sourceString == destinationString)
-            yield break;
-
-        if (sourceString == string.Empty || destinationString == string.Empty)
+        public TextDiff ComputeDiff(string sourceText, string targetText)
         {
-            yield return new DiffChunk(sourceString, offset, destinationString, offset);
-            yield break;
+            return new TextDiff(sourceText, targetText, Diff(sourceText, targetText, 0).ToList());
         }
 
-        var commonPart = SubstringSearcher.LongestCommonSubstring(sourceString, destinationString);
-        if (commonPart.Length == 0)
+        private static IEnumerable<TextEdit> Diff(string source, string target, int offset)
         {
-            yield return new DiffChunk(sourceString, offset, destinationString, offset);
-            yield break;
+            var result = new List<TextEdit>();
+
+            if (source == target) return result;
+
+            if (source.Length == 0 || target.Length == 0)
+            {
+                result.Add(new TextEdit(offset, source.Length, target));
+                return result;
+            }
+
+            var common = SubstringSearcher.LongestCommonSubstring(source, target);
+
+            if (common.Length == 0)
+            {
+                result.Add(new TextEdit(offset, source.Length, target));
+                return result;
+            }
+
+            result.AddRange(Diff(
+                source[..common.SourceStartIndex],
+                target[..common.TargetStartIndex], offset));
+            result.AddRange(Diff(
+                source[(common.SourceStartIndex + common.Length)..],
+                target[(common.TargetStartIndex + common.Length)..],
+                offset + common.SourceStartIndex + common.Length));
+
+            return result;
         }
-
-        var left = GetDiff(sourceString.Substring(0, commonPart.SourceStartIndex), destinationString.Substring(0, commonPart.DestinationStartIndex), offset);
-        foreach (var chunk in left) yield return chunk;
-
-        var right = GetDiff(sourceString.Substring(commonPart.SourceStartIndex + commonPart.Length), destinationString.Substring(commonPart.DestinationStartIndex + commonPart.Length), offset + commonPart.SourceStartIndex + commonPart.Length);
-        foreach (var chunk in right) yield return chunk;
     }
 }
-
-

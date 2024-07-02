@@ -1,5 +1,4 @@
-﻿using DimonSmart.StringDiff;
-using Xunit;
+﻿using Xunit;
 
 namespace DimonSmart.StringDiffTests
 {
@@ -16,7 +15,7 @@ namespace DimonSmart.StringDiffTests
         {
             var result = SubstringSearcher.LongestCommonSubstring(source, destination);
             Assert.Equal(expectedSourceStartIndex, result.SourceStartIndex);
-            Assert.Equal(expectedDestinationStartIndex, result.DestinationStartIndex);
+            Assert.Equal(expectedDestinationStartIndex, result.TargetStartIndex);
             Assert.Equal(expectedLength, result.Length);
         }
     }
