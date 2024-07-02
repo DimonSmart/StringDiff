@@ -2,7 +2,6 @@
 
 public interface IStringDiff
 {
-    IReadOnlyCollection<DiffChunk> GetDiff(string oldString, string newString);
+    TextDiff ComputeDiff(string sourceText, string targetText);
 }
-
 
