@@ -22,7 +22,7 @@ namespace DimonSmart.StringDiffTests
             var textDiff = stringDiff.ComputeDiff(source, target);
 
             // Assert
-            var reconstructedTarget = StringReconstructor.Reconstruct(textDiff.Edits, source);
+            var reconstructedTarget = StringReconstructor.Instance.Reconstruct(textDiff.Edits, source);
             Assert.Equal(target, reconstructedTarget);
         }
     }
