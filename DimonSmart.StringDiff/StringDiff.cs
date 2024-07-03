@@ -2,12 +2,24 @@
 {
     public class StringDiff : IStringDiff
     {
+        public StringDiffOptions Options { get; }
+
+        public StringDiff()
+        {
+            Options = new StringDiffOptions(0);
+        }
+
+        public StringDiff(StringDiffOptions options)
+        {
+            Options = options;
+        }
+
         public TextDiff ComputeDiff(string sourceText, string targetText)
         {
             return new TextDiff(sourceText, targetText, Diff(sourceText, targetText, 0).ToList());
         }
 
-        private static IEnumerable<TextEdit> Diff(string source, string target, int offset)
+        private IEnumerable<TextEdit> Diff(string source, string target, int offset)
         {
             var result = new List<TextEdit>();
 
@@ -21,7 +33,7 @@
 
             var common = LongestSubstringSearcher.GetLongestCommonSubstring(source, target);
 
-            if (common.Length == 0)
+            if (common.Length == 0 || common.Length <= Options.MinCommonLength)
             {
                 result.Add(new TextEdit(offset, source.Length, target));
                 return result;
