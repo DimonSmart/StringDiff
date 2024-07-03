@@ -10,36 +10,43 @@ public static class LongestSubstringSearcher
 
     private static readonly Regex WordBoundaryRegex = new(@"\b", RegexOptions.Compiled);
 
-    public static SubstringDescription GetLongestCommonSubstring(string source, string target, WordBoundaryDetector? wordBoundaries = null)
+    public static SubstringDescription GetLongestCommonSubstring(string source, string target, IWordBoundaryDetector? wordBoundaryDetector = null)
     {
-        var sourceBoundaries = wordBoundaries?.Invoke(source);
-        var targetBoundaries = wordBoundaries?.Invoke(target);
+        var lcsMatrix = new int[source.Length + 1, target.Length + 1];
+        var longestLength = 0;
+        var sourceEndIndex = 0;
+        var targetEndIndex = 0;
 
-        var dp = new int[source.Length + 1, target.Length + 1];
-        var maxLength = 0;
-        var sourceEndAt = 0;
-        var targetStartIndex = 0;
+        var sourceBoundaries = wordBoundaryDetector?.Detect(source);
+        var targetBoundaries = wordBoundaryDetector?.Detect(target);
 
         for (var i = 1; i <= source.Length; i++)
         {
             for (var j = 1; j <= target.Length; j++)
             {
-                var sourceIsBoundary = sourceBoundaries?.Contains(i - 1) ?? true;
-                var targetIsBoundary = targetBoundaries?.Contains(j - 1) ?? true;
-
-                if (source[i - 1] == target[j - 1] && sourceIsBoundary && targetIsBoundary)
+                if (source[i - 1] == target[j - 1])
                 {
-                    dp[i, j] = dp[i - 1, j - 1] + 1;
-                    if (dp[i, j] <= maxLength) continue;
-                    maxLength = dp[i, j];
-                    sourceEndAt = i;
-                    targetStartIndex = j - maxLength;
+                    lcsMatrix[i, j] = lcsMatrix[i - 1, j - 1] + 1;
+
+                    var sourceStartIndex = i - lcsMatrix[i, j];
+                    var targetStartIndex = j - lcsMatrix[i, j];
+
+                    var isSourceBoundaryValid = sourceBoundaries == null || (sourceBoundaries.Contains(sourceStartIndex) && sourceBoundaries.Contains(i));
+                    var isTargetBoundaryValid = targetBoundaries == null || (targetBoundaries.Contains(targetStartIndex) && targetBoundaries.Contains(j));
+
+                    if (lcsMatrix[i, j] > longestLength && isSourceBoundaryValid && isTargetBoundaryValid)
+                    {
+                        longestLength = lcsMatrix[i, j];
+                        sourceEndIndex = i;
+                        targetEndIndex = j;
+                    }
                 }
             }
         }
 
-        return new SubstringDescription(sourceEndAt - maxLength, targetStartIndex, maxLength);
+        var sourceStartIndexResult = sourceEndIndex - longestLength;
+        var targetStartIndexResult = targetEndIndex - longestLength;
+
+        return new SubstringDescription(sourceStartIndexResult, targetStartIndexResult, longestLength);
     }
-
-
 }

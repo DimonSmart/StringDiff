@@ -49,5 +49,30 @@ namespace DimonSmart.StringDiffTests
             Assert.True(textDiff.Edits.Count <= 1);
             Assert.Equal(target, reconstructedTarget);
         }
+
+        [Theory]
+        [InlineData("To be or not to be", "To be or not to bee", new[] { "bee" })]
+        [InlineData("be", "bee", new[] { "bee" })]
+        [InlineData("I have a dreem", "I have a dream", new[] { "dream" })]
+        [InlineData("Hello, world!", "Hello, Word!", new[] { "Word!" })]
+        [InlineData("Edge case", "Edge cases", new[] { "cases" })]
+        [InlineData("", "Non-empty", new[] { "Non-empty" })]
+        [InlineData("Non-empty", "", new[] { "" })]
+        [InlineData("Same text", "Same text", new string[] { })]
+        [InlineData("1234567890", "0987654321", new[] { "0987654321" })]
+        public void ComputeDiff_ShouldRespectWordBoundariesOptionSpecified(string source, string target, string[] expectedEditTexts)
+        {
+            // Arrange
+            var stringDiff = new StringDiff.StringDiff(new StringDiffOptions(0, new DefaultWordBoundaryDetector()));
+
+            // Act
+            var textDiff = stringDiff.ComputeDiff(source, target);
+
+            // Assert
+            var reconstructedTarget = StringReconstructor.Instance.Reconstruct(textDiff.Edits, source);
+            Assert.True(textDiff.Edits.Count <= 1);
+            Assert.Equal(target, reconstructedTarget);
+            Assert.Equal(expectedEditTexts, textDiff.Edits.Select(edit => edit.InsertedText));
+        }
     }
 }
