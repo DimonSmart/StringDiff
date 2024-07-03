@@ -1,21 +1,39 @@
-﻿using System.Text.RegularExpressions;
+﻿using System.ComponentModel;
+using System.Text.RegularExpressions;
 
-namespace DimonSmart.StringDiff;
-
-public static class DefaultWordBoundaryDetector
+namespace DimonSmart.StringDiff
 {
-    private static readonly Regex WordBoundaryRegex = new(@"\b", RegexOptions.Compiled);
-
-    public static HashSet<int> Detect(string s)
+    public class DefaultWordBoundaryDetector : IWordBoundaryDetector
     {
-        var boundaries = new HashSet<int> { 0 };
-        var matches = WordBoundaryRegex.Matches(s);
+        private readonly Regex _wordBoundaryRegex;
 
-        foreach (Match match in matches)
-            boundaries.Add(match.Index);
+        public DefaultWordBoundaryDetector() : this(@"\b")
+        {
+        }
 
-        boundaries.Add(s.Length);
+        public DefaultWordBoundaryDetector(string regexPattern)
+        {
+            if (string.IsNullOrEmpty(regexPattern))
+            {
+                throw new ArgumentException("Regex pattern must not be null or empty.", nameof(regexPattern));
+            }
 
-        return boundaries;
+            _wordBoundaryRegex = new Regex(regexPattern, RegexOptions.Compiled);
+        }
+
+        public static DefaultWordBoundaryDetector Instance = new DefaultWordBoundaryDetector();
+
+        public HashSet<int> Detect(string s)
+        {
+            var boundaries = new HashSet<int> { 0 };
+            var matches = _wordBoundaryRegex.Matches(s);
+
+            foreach (Match match in matches)
+                boundaries.Add(match.Index);
+
+            boundaries.Add(s.Length);
+
+            return boundaries;
+        }
     }
 }

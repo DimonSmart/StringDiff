@@ -12,7 +12,7 @@ namespace DimonSmart.StringDiffTests
         [InlineData("example", new[] { 0, 7 })]
         public void Detect_ShouldReturnCorrectBoundaries(string input, int[] expected)
         {
-            var boundaries = DefaultWordBoundaryDetector.Detect(input);
+            var boundaries = DefaultWordBoundaryDetector.Instance.Detect(input);
             Assert.Equal(new HashSet<int>(expected), boundaries);
         }
     }
