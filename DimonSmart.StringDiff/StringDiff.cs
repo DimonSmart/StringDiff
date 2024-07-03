@@ -19,7 +19,7 @@
                 return result;
             }
 
-            var common = SubstringSearcher.LongestCommonSubstring(source, target);
+            var common = LongestSubstringSearcher.GetLongestCommonSubstring(source, target);
 
             if (common.Length == 0)
             {

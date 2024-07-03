@@ -1,8 +1,9 @@
-﻿using Xunit;
+﻿using DimonSmart.StringDiff;
+using Xunit;
 
 namespace DimonSmart.StringDiffTests
 {
-    public class SubstringSearcherTests
+    public class LongestSubstringSearcherTests
     {
         [Theory]
         [InlineData("", "", 0, 0, 0)]
@@ -13,7 +14,7 @@ namespace DimonSmart.StringDiffTests
         [InlineData("abcdeabcde", "abcde", 0, 0, 5)]
         public void LongestCommonSubstringTests(string source, string destination, int expectedSourceStartIndex, int expectedDestinationStartIndex, int expectedLength)
         {
-            var result = SubstringSearcher.LongestCommonSubstring(source, destination);
+            var result = LongestSubstringSearcher.GetLongestCommonSubstring(source, destination);
             Assert.Equal(expectedSourceStartIndex, result.SourceStartIndex);
             Assert.Equal(expectedDestinationStartIndex, result.TargetStartIndex);
             Assert.Equal(expectedLength, result.Length);
