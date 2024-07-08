@@ -6,19 +6,34 @@ public class StringReconstructor
 {
     public string Reconstruct(IReadOnlyCollection<TextEdit> edits, string source)
     {
-        var result = new StringBuilder(source);
+        var result = new StringBuilder(source.Length * 2);
         var offset = 0;
+        var currentPosition = 0;
 
         foreach (var edit in edits)
         {
-            var oldText = result.ToString(edit.StartPosition + offset, edit.DeletedLength);
+            if (edit.StartPosition > currentPosition)
+            {
+                var unchangedText = source.Substring(currentPosition, edit.StartPosition - currentPosition);
+                result.Append(FormatUnchangedText(unchangedText));
+                currentPosition = edit.StartPosition;
+            }
+
+            var oldText = source.Substring(edit.StartPosition, edit.DeletedLength);
             var newText = edit.InsertedText;
 
-            result.Remove(edit.StartPosition + offset, edit.DeletedLength);
             var formattedText = FormatText(oldText, newText);
-            result.Insert(edit.StartPosition + offset, formattedText);
+            result.Append(formattedText);
 
+            currentPosition = edit.StartPosition + edit.DeletedLength;
             offset += formattedText.Length - edit.DeletedLength;
+        }
+
+        // Append any remaining unchanged text after the last edit
+        if (currentPosition < source.Length)
+        {
+            var remainingText = source.Substring(currentPosition);
+            result.Append(FormatUnchangedText(remainingText));
         }
 
         return result.ToString();
@@ -31,6 +46,8 @@ public class StringReconstructor
     protected virtual string FormatDeletedText(string text) => string.Empty;
 
     protected virtual string FormatModifiedText(string oldText, string newText) => newText;
+
+    protected virtual string FormatUnchangedText(string text) => text;
 
     private string FormatText(string oldText, string newText)
     {

@@ -14,6 +14,9 @@ namespace DimonSmart.StringDiffTests
         [InlineData("Non-empty", "")]
         [InlineData("Same text", "Same text")]
         [InlineData("1234567890", "0987654321")]
+        [InlineData("A B", "A\nB")]
+        [InlineData("A\b B", "AB")]
+        [InlineData("AB", "\nA\nB\n")]
         public void ComputeDiff_ShouldReconstructTargetCorrectly(string source, string target)
         {
             // Arrange
