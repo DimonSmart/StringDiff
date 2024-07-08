@@ -1,6 +1,6 @@
 # DimonSmart.StringDiff
 
-DimonSmart.StringDiff is a .NET library designed to efficiently compute the differences between two strings. This package is particularly useful for visualizing edit history by highlighting differences between versions of text.
+DimonSmart.StringDiff is a library for computing differences between strings, and creating difference models. Support for Markdown formatting.
 
 ## Installation
 
@@ -22,6 +22,7 @@ Below is a guide on how to use the DimonSmart.StringDiff library to compute and 
 
 ### Basic Example
 
+
 ```csharp
 using DimonSmart.StringDiff;
 
@@ -36,7 +37,7 @@ var textDiff = stringDiff.ComputeDiff(sourceText, targetText);
 // Display the differences
 foreach (var edit in textDiff.Edits)
 {
-    Console.WriteLine($"Offset: {edit.Offset}, Length: {edit.Length}, Replacement: {edit.Replacement}");
+  Console.WriteLine($"StartPosition: {edit.StartPosition}, DeletedLength: {edit.DeletedLength}, InsertedText: {edit.InsertedText}");
 }
 ```
 
@@ -61,7 +62,7 @@ var textDiff = stringDiff.ComputeDiff(sourceText, targetText);
 // Display the differences
 foreach (var edit in textDiff.Edits)
 {
-    Console.WriteLine($"Offset: {edit.Offset}, Length: {edit.Length}, Replacement: {edit.Replacement}");
+    Console.WriteLine($"StartPosition: {edit.StartPosition}, DeletedLength: {edit.DeletedLength}, InsertedText: {edit.InsertedText}");
 }
 ```
 
