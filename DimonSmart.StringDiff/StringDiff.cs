@@ -31,7 +31,7 @@
                 return result;
             }
 
-            var common = LongestSubstringSearcher.GetLongestCommonSubstring(source, target, Options.WordBoundaryDetector);
+            var common = LongestSubstringSearcher.GetLongestCommonSubstring(source, target, Options);
 
             if (common.Length == 0 || common.Length <= Options.MinCommonLength)
             {

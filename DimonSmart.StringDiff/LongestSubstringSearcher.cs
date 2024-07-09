@@ -10,15 +10,15 @@ public static class LongestSubstringSearcher
 
     private static readonly Regex WordBoundaryRegex = new(@"\b", RegexOptions.Compiled);
 
-    public static SubstringDescription GetLongestCommonSubstring(string source, string target, IWordBoundaryDetector? wordBoundaryDetector = null)
+    public static SubstringDescription GetLongestCommonSubstring(string source, string target, StringDiffOptions options)
     {
         var lcsMatrix = new int[source.Length + 1, target.Length + 1];
         var longestLength = 0;
         var sourceEndIndex = 0;
         var targetEndIndex = 0;
 
-        var sourceBoundaries = wordBoundaryDetector?.Detect(source);
-        var targetBoundaries = wordBoundaryDetector?.Detect(target);
+        var sourceBoundaries = options.WordBoundaryDetector?.Detect(source);
+        var targetBoundaries = options.WordBoundaryDetector?.Detect(target);
 
         for (var i = 1; i <= source.Length; i++)
         {
@@ -36,9 +36,17 @@ public static class LongestSubstringSearcher
 
                     if (lcsMatrix[i, j] > longestLength && isSourceBoundaryValid && isTargetBoundaryValid)
                     {
-                        longestLength = lcsMatrix[i, j];
-                        sourceEndIndex = i;
-                        targetEndIndex = j;
+                        var longest = lcsMatrix[i, j];
+                        if (options.MinCommonLength == 0 ||
+                            (
+                             (sourceEndIndex - longest) > options.MinCommonLength &&
+                             (source.Length - longest) > options.MinCommonLength
+                            ))
+                        {
+                            longestLength = longest;
+                            sourceEndIndex = i;
+                            targetEndIndex = j;
+                        }
                     }
                 }
             }
