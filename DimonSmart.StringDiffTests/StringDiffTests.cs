@@ -63,6 +63,8 @@ namespace DimonSmart.StringDiffTests
         [InlineData("Non-empty", "", new[] { "" })]
         [InlineData("Same text", "Same text", new string[] { })]
         [InlineData("1234567890", "0987654321", new[] { "0987654321" })]
+        [InlineData("miles to go", "kilometers to go", new[] { "kilometer" })]
+
         public void ComputeDiff_ShouldRespectWordBoundariesOptionSpecified(string source, string target, string[] expectedEditTexts)
         {
             // Arrange

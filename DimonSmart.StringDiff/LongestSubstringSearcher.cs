@@ -8,8 +8,6 @@ public static class LongestSubstringSearcher
 
     public delegate HashSet<int> WordBoundaryDetector(string s);
 
-    private static readonly Regex WordBoundaryRegex = new(@"\b", RegexOptions.Compiled);
-
     public static SubstringDescription GetLongestCommonSubstring(string source, string target, StringDiffOptions options)
     {
         var lcsMatrix = new int[source.Length + 1, target.Length + 1];
@@ -30,22 +28,29 @@ public static class LongestSubstringSearcher
 
                     var sourceStartIndex = i - lcsMatrix[i, j];
                     var targetStartIndex = j - lcsMatrix[i, j];
-
-                    var isSourceBoundaryValid = sourceBoundaries == null || (sourceBoundaries.Contains(sourceStartIndex) && sourceBoundaries.Contains(i));
-                    var isTargetBoundaryValid = targetBoundaries == null || (targetBoundaries.Contains(targetStartIndex) && targetBoundaries.Contains(j));
-
-                    if (lcsMatrix[i, j] > longestLength && isSourceBoundaryValid && isTargetBoundaryValid)
+                    if (lcsMatrix[i, j] >= longestLength)
                     {
                         var longest = lcsMatrix[i, j];
-                        if (options.MinCommonLength == 0 ||
-                            (
-                             (sourceEndIndex - longest) > options.MinCommonLength &&
-                             (source.Length - longest) > options.MinCommonLength
-                            ))
+                        if (options.MinCommonLength == 0 || longest > options.MinCommonLength)
                         {
-                            longestLength = longest;
-                            sourceEndIndex = i;
-                            targetEndIndex = j;
+                            if (longest == 5)
+                            {
+
+                                var x = 5;
+                            }
+
+
+                            var start = i - longest; if (start < 0) start = 0;
+
+                            var isSourceBoundaryValid = sourceBoundaries == null || (sourceBoundaries.Contains(i-1) && sourceBoundaries.Contains(start));
+                            var isTargetBoundaryValid = targetBoundaries == null || (targetBoundaries.Contains(j-1) && targetBoundaries.Contains(start));
+                            var islongerThenOneChar = options.WordBoundaryDetector == null || longest > 1;
+                            if (isSourceBoundaryValid && isTargetBoundaryValid && islongerThenOneChar)
+                            {
+                                longestLength = longest;
+                                sourceEndIndex = i;
+                                targetEndIndex = j;
+                            }
                         }
                     }
                 }

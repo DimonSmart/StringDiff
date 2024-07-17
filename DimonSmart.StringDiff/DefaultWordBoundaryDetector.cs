@@ -6,7 +6,7 @@ namespace DimonSmart.StringDiff
     {
         private readonly Regex _wordBoundaryRegex;
 
-        public DefaultWordBoundaryDetector() : this(@"\b")
+        public DefaultWordBoundaryDetector() : this(@"\s|\p{P}") // @"\b|\s")
         {
         }
 
@@ -22,17 +22,52 @@ namespace DimonSmart.StringDiff
 
         public static DefaultWordBoundaryDetector Instance = new DefaultWordBoundaryDetector();
 
-        public HashSet<int> Detect(string s)
+        public HashSet<int> DetectX(string s)
         {
             var boundaries = new HashSet<int> { 0 };
             var matches = _wordBoundaryRegex.Matches(s);
 
             foreach (Match match in matches)
-                boundaries.Add(match.Index);
+                if (match.Index < s.Length)
+                    boundaries.Add(match.Index);
 
-            boundaries.Add(s.Length);
+            if (s.Length > 0)
+               boundaries.Add(s.Length - 1);
 
             return boundaries;
+        }
+
+        public HashSet<int> Detect(string s)
+        {
+            var indices = new HashSet<int>();
+            if (string.IsNullOrEmpty(s))
+                return indices;
+            
+            var inWord = false;
+            for (var i = 0; i < s.Length; i++)
+            {
+                if (char.IsLetterOrDigit(s[i]))
+                {
+                    if (!inWord)
+                    {
+                        indices.Add(i);
+                        inWord = true;
+                    }
+                    continue;
+                }
+
+                if (inWord)
+                {
+                    inWord = false;
+                    indices.Add(i-1);
+                }
+
+                indices.Add(i);
+            }
+
+            indices.Add(s.Length - 1);
+
+            return indices;
         }
     }
 }
