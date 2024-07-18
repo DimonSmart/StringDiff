@@ -1,6 +1,4 @@
-﻿using System.Text.RegularExpressions;
-
-namespace DimonSmart.StringDiff;
+﻿namespace DimonSmart.StringDiff;
 
 public static class LongestSubstringSearcher
 {
@@ -8,21 +6,17 @@ public static class LongestSubstringSearcher
 
     public delegate HashSet<int> WordBoundaryDetector(string s);
 
-    public static SubstringDescription GetLongestCommonSubstring(string source, string target, StringDiffOptions options) => options.WordBoundaryDetector == null
-            ? GetLongestCommonSubstringWithoutWorkdBreaker(source, target, options)
-            : GetLongestCommonSubstringWithWordBreaker(source, target, options);
+    public static SubstringDescription GetLongestCommonSubstring(string source, string target, StringDiffOptions options) =>
+        options.WordBoundaryDetector == null
+            ? GetLongestCommonSubstringWithoutWordBoundaryDetector(source, target, options)
+            : GetLongestCommonSubstringWithWordBoundaryDetector(source, target, options);
 
-    public static SubstringDescription GetLongestCommonSubstringWithoutWorkdBreaker(string source, string target, StringDiffOptions options)
+    public static SubstringDescription GetLongestCommonSubstringWithoutWordBoundaryDetector(string source, string target, StringDiffOptions options)
     {
         var lcsMatrix = new int[source.Length + 1, target.Length + 1];
         var longestLength = 0;
         var sourceEndIndex = 0;
         var targetEndIndex = 0;
-
-        var sourceBoundariesBeginnings = options.WordBoundaryDetector?.DetectWordBeginnings(source);
-        var sourceBoundariesEndings = options.WordBoundaryDetector?.DetectWordEndings(source);
-        var targetBoundariesBeginnings = options.WordBoundaryDetector?.DetectWordBeginnings(target);
-        var targetBoundariesEndings = options.WordBoundaryDetector?.DetectWordEndings(target);
 
         for (var i = 1; i <= source.Length; i++)
         {
@@ -32,44 +26,14 @@ public static class LongestSubstringSearcher
                 {
                     lcsMatrix[i, j] = lcsMatrix[i - 1, j - 1] + 1;
 
-                    var sourceStartIndex = i - lcsMatrix[i, j];
-                    var targetStartIndex = j - lcsMatrix[i, j];
                     if (lcsMatrix[i, j] > longestLength)
                     {
                         var longest = lcsMatrix[i, j];
                         if (options.MinCommonLength == 0 || longest > options.MinCommonLength)
                         {
-                            if (longest == 5)
-                            {
-
-                                var x = 5;
-                            }
-
-                            var sourceBeginning = i - longest; if (sourceBeginning < 0) sourceBeginning = 0;
-                            var targetBeginning = j - longest; if (targetBeginning < 0) targetBeginning = 0;
-
-                            var isSourceBoundaryBeginningValid = false;
-                            var isSourceBoundaryEndingValid = false;
-                            var isTargetBoundaryBeginningValid = false;
-                            var isTargetBoundaryEndingValid = false;
-
-                            if (options.WordBoundaryDetector != null)
-                            {
-                                isSourceBoundaryBeginningValid = sourceBoundariesBeginnings!.Contains(sourceBeginning);
-                                isSourceBoundaryEndingValid = sourceBoundariesEndings!.Contains(i - 1);
-                                isTargetBoundaryBeginningValid = targetBoundariesBeginnings!.Contains(targetBeginning);
-                                isTargetBoundaryEndingValid = targetBoundariesEndings!.Contains(j - 1);
-                            }
-                            if (options.WordBoundaryDetector == null ||
-                                (isSourceBoundaryBeginningValid &&
-                                isSourceBoundaryEndingValid &&
-                                isTargetBoundaryBeginningValid &&
-                                isTargetBoundaryEndingValid))
-                            {
-                                longestLength = longest;
-                                sourceEndIndex = i;
-                                targetEndIndex = j;
-                            }
+                            longestLength = longest;
+                            sourceEndIndex = i;
+                            targetEndIndex = j;
                         }
                     }
                 }
@@ -83,38 +47,35 @@ public static class LongestSubstringSearcher
     }
 
 
-
-    public static SubstringDescription GetLongestCommonSubstringWithWordBreaker(string source, string target, StringDiffOptions options)
+    public static SubstringDescription GetLongestCommonSubstringWithWordBoundaryDetector(string source, string target, StringDiffOptions options)
     {
         var longestLength = 0;
         var sourceStartIndexResult = 0;
         var targetStartIndexResult = 0;
-
-        var sourceBoundariesBeginnings = options.WordBoundaryDetector?.DetectWordBeginnings(source) ?? new HashSet<int>();
-        var sourceBoundariesEndings = options.WordBoundaryDetector?.DetectWordEndings(source) ?? new HashSet<int>();
-        var targetBoundariesBeginnings = options.WordBoundaryDetector?.DetectWordBeginnings(target) ?? new HashSet<int>();
-        var targetBoundariesEndings = options.WordBoundaryDetector?.DetectWordEndings(target) ?? new HashSet<int>();
+        var sourceBoundariesBeginnings = options.WordBoundaryDetector!.DetectWordBeginnings(source);
+        var sourceBoundariesEndings = options.WordBoundaryDetector!.DetectWordEndings(source);
+        var targetBoundariesBeginnings = options.WordBoundaryDetector!.DetectWordBeginnings(target);
+        var targetBoundariesEndings = options!.WordBoundaryDetector.DetectWordEndings(target);
 
         foreach (var sourceStart in sourceBoundariesBeginnings)
         {
             foreach (var targetStart in targetBoundariesBeginnings)
             {
-                var possibleSourceLengths = sourceBoundariesEndings.Where(e => e >= sourceStart).Select(e => e - sourceStart + 1).ToList();
-                var possibleTargetLengths = targetBoundariesEndings.Where(e => e >= targetStart).Select(e => e - targetStart + 1).ToList();
-
+                var possibleSourceLengths = sourceBoundariesEndings.Where(e => e >= sourceStart).Select(e => e - sourceStart + 1);
+                var possibleTargetLengths = targetBoundariesEndings.Where(e => e >= targetStart).Select(e => e - targetStart + 1);
                 var commonLengths = possibleSourceLengths.Intersect(possibleTargetLengths).ToList();
 
-                foreach (int length in commonLengths)
+                foreach (var length in commonLengths)
                 {
-                    int sourceEnd = sourceStart + length - 1;
-                    int targetEnd = targetStart + length - 1;
+                    var sourceEnd = sourceStart + length - 1;
+                    var targetEnd = targetStart + length - 1;
 
-                    if (sourceEnd <= sourceBoundariesEndings.Max() && targetEnd <= targetBoundariesEndings.Max())
+                    if (sourceEnd < source.Length && targetEnd < target.Length)
                     {
-                        string sourceSubstring = source.Substring(sourceStart, length);
-                        string targetSubstring = target.Substring(targetStart, length);
+                        var sourceSpan = source.AsSpan(sourceStart, length);
+                        var targetSpan = target.AsSpan(targetStart, length);
 
-                        if (sourceSubstring == targetSubstring && length > longestLength)
+                        if (sourceSpan.SequenceEqual(targetSpan) && length > longestLength)
                         {
                             longestLength = length;
                             sourceStartIndexResult = sourceStart;
@@ -127,7 +88,4 @@ public static class LongestSubstringSearcher
 
         return new SubstringDescription(sourceStartIndexResult, targetStartIndexResult, longestLength);
     }
-
-
-
 }
