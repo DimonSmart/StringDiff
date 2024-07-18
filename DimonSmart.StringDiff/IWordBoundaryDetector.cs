@@ -2,6 +2,7 @@
 {
     public interface IWordBoundaryDetector
     {
-        HashSet<int> Detect(string s);
+        HashSet<int> DetectWordBeginnings(string s);
+        HashSet<int> DetectWordEndings(string s);
     }
 }
