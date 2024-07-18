@@ -57,13 +57,13 @@ namespace DimonSmart.StringDiffTests
         [InlineData("To be or not to be", "To be or not to bee", new[] { "bee" })]
         [InlineData("be", "bee", new[] { "bee" })]
         [InlineData("I have a dreem", "I have a dream", new[] { "dream" })]
-        [InlineData("Hello, world!", "Hello, Word!", new[] { "Word!" })]
+        [InlineData("Hello, world!", "Hello, Word!", new[] { "Word" })]
         [InlineData("Edge case", "Edge cases", new[] { "cases" })]
         [InlineData("", "Non-empty", new[] { "Non-empty" })]
         [InlineData("Non-empty", "", new[] { "" })]
         [InlineData("Same text", "Same text", new string[] { })]
         [InlineData("1234567890", "0987654321", new[] { "0987654321" })]
-        [InlineData("miles to go", "kilometers to go", new[] { "kilometer" })]
+        [InlineData("miles to go", "kilometers to go", new[] { "kilometers" })]
 
         public void ComputeDiff_ShouldRespectWordBoundariesOptionSpecified(string source, string target, string[] expectedEditTexts)
         {
