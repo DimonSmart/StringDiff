@@ -59,13 +59,15 @@ public static class LongestSubstringSearcher
 
         foreach (var sourceStart in sourceBoundariesBeginnings)
         {
+            var possibleSourceLengths = sourceBoundariesEndings.Where(e => e >= sourceStart).Select(e => e - sourceStart + 1).ToHashSet();
             foreach (var targetStart in targetBoundariesBeginnings)
             {
-                var possibleSourceLengths = sourceBoundariesEndings.Where(e => e >= sourceStart).Select(e => e - sourceStart + 1);
-                var possibleTargetLengths = targetBoundariesEndings.Where(e => e >= targetStart).Select(e => e - targetStart + 1);
-                var commonLengths = possibleSourceLengths.Intersect(possibleTargetLengths).ToList();
+                if (source[sourceStart] != target[targetStart]) continue;
 
-                foreach (var length in commonLengths)
+                var possibleTargetLengths = targetBoundariesEndings.Where(e => e >= targetStart).Select(e => e - targetStart + 1).ToHashSet();
+                possibleTargetLengths.IntersectWith(possibleSourceLengths);
+
+                foreach (var length in possibleTargetLengths)
                 {
                     var sourceEnd = sourceStart + length - 1;
                     var targetEnd = targetStart + length - 1;
