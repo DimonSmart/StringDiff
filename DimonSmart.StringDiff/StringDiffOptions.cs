@@ -8,6 +8,6 @@
 /// <param name="WordBoundaryDetector"> The word boundary detector to use for detecting word boundaries.
 /// If null, the default word boundary detection will be used. </param>
 public record StringDiffOptions(int MinCommonLength, IWordBoundaryDetector? WordBoundaryDetector = null)
-{ 
+{
     public static StringDiffOptions Default => new(0, null);
 }

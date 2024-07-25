@@ -8,7 +8,7 @@ namespace DimonSmart.StringDiffTests
         [Theory]
         [InlineData("hello world", new[] { 0, 5, 6 })]
         [InlineData("hello\nworld\nexample", new[] { 0, 5, 6, 11, 12 })]
-        [InlineData("", new int [0])]
+        [InlineData("", new int[0])]
         [InlineData("example", new[] { 0 })]
         [InlineData("abc abcde", new[] { 0, 3, 4 })]
         [InlineData("abcde", new[] { 0 })]

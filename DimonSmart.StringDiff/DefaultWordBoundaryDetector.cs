@@ -6,10 +6,10 @@
 
         public HashSet<int> DetectWordBeginnings(string s)
         {
-            var indices = new HashSet<int>(s.Length) {};
+            var indices = new HashSet<int>(s.Length) { };
             if (string.IsNullOrEmpty(s))
                 return indices;
-            
+
             var inWord = false;
             for (var i = 0; i < s.Length; i++)
             {
