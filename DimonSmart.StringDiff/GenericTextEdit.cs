@@ -1,19 +1,11 @@
 namespace DimonSmart.StringDiff
 {
-    public class GenericTextEdit<T>
+    public class GenericTextEdit<T>(int startPosition, IReadOnlyList<T> deletedTokens, IReadOnlyList<T> insertedTokens, IReadOnlyList<T> sourceTokens)
     {
-        public int StartPosition { get; }
-        public IReadOnlyList<T> DeletedTokens { get; }
-        public IReadOnlyList<T> InsertedTokens { get; }
-        private readonly IReadOnlyList<T> _sourceTokens;
-
-        public GenericTextEdit(int startPosition, IReadOnlyList<T> deletedTokens, IReadOnlyList<T> insertedTokens, IReadOnlyList<T> sourceTokens)
-        {
-            StartPosition = startPosition;
-            DeletedTokens = deletedTokens;
-            InsertedTokens = insertedTokens;
-            _sourceTokens = sourceTokens;
-        }
+        public int StartPosition { get; } = startPosition;
+        public IReadOnlyList<T> DeletedTokens { get; } = deletedTokens;
+        public IReadOnlyList<T> InsertedTokens { get; } = insertedTokens;
+        private readonly IReadOnlyList<T> _sourceTokens = sourceTokens;
 
         public TextEdit ToStringEdit()
         {
