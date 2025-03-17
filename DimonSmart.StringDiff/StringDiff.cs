@@ -16,6 +16,14 @@
 
         public TextDiff ComputeDiff(string sourceText, string targetText)
         {
+            if (Options.TokenBoundaryDetector != null)
+            {
+                var genericDiff = new GenericDiff<string>(Options.TokenBoundaryDetector, null, Options.MinCommonLength);
+                var genericEdits = genericDiff.ComputeDiff(sourceText, targetText);
+                var edits = genericEdits.Select(e => e.ToStringEdit()).ToList();
+                return new TextDiff(sourceText, targetText, edits);
+            }
+
             return new TextDiff(sourceText, targetText, Diff(sourceText, targetText, 0).ToList());
         }
 
@@ -31,7 +39,7 @@
                 return result;
             }
 
-            var common = LongestSubstringSearcher.GetLongestCommonSubstring(source, target, Options);
+            var common = TokenSequenceMatcher.GetLongestCommonSubstring(source, target, Options);
 
             if (common.Length == 0 || common.Length <= Options.MinCommonLength)
             {

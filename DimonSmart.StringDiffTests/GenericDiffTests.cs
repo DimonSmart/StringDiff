@@ -1,16 +1,12 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text.RegularExpressions;
+﻿using System.Text.RegularExpressions;
 using Xunit;
-using DimonSmart.StringDiff;
 
 namespace DimonSmart.StringDiff.Tests
 {
     public class GenericDiffTests
     {
         // Tokenizer splits text into tokens using a regex that preserves words and non-word tokens.
-        private class RegexWordBoundaryDetector : ITokenBoundaryDetector<string>
+        private class RegexTokenBoundaryDetector : ITokenBoundaryDetector<string>
         {
             public IEnumerable<string> Tokenize(string text)
             {
@@ -29,7 +25,7 @@ namespace DimonSmart.StringDiff.Tests
             {
                 var tokens = tokenizer.Tokenize(source).ToList();
                 var resultTokens = new List<string>();
-                int currentIndex = 0;
+                var currentIndex = 0;
                 // Process edits in order of increasing start position.
                 foreach (var edit in edits.OrderBy(e => e.StartPosition))
                 {
@@ -62,16 +58,16 @@ namespace DimonSmart.StringDiff.Tests
         public void ComputeGenericDiff_ShouldRespectMinLengthOptionSpecified(string source, string target)
         {
             // Arrange
-            var tokenizer = new RegexWordBoundaryDetector();
+            var tokenizer = new RegexTokenBoundaryDetector();
             var genericDiff = new GenericDiff<string>(tokenizer, minCommonLength: 10);
             var reconstructor = new GenericStringReconstructor();
 
             // Act
-            var genericTextDiff = genericDiff.ComputeDiff(source, target);
-            var reconstructedTarget = reconstructor.Reconstruct(genericTextDiff.Edits, source, tokenizer);
+            var edits = genericDiff.ComputeDiff(source, target);
+            var reconstructedTarget = reconstructor.Reconstruct(edits, source, tokenizer);
 
             // Assert
-            Assert.True(genericTextDiff.Edits.Count <= 1);
+            Assert.True(edits.Count <= 1);
             Assert.Equal(target, reconstructedTarget);
         }
     }

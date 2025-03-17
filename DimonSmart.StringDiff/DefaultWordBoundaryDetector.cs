@@ -1,10 +1,22 @@
 ﻿namespace DimonSmart.StringDiff
 {
-    public class DefaultWordBoundaryDetector : IWordBoundaryDetector
+    public class DefaultTokenBoundaryDetector : ITokenBoundaryDetector<string>
     {
-        public static DefaultWordBoundaryDetector Instance = new DefaultWordBoundaryDetector();
+        public static DefaultTokenBoundaryDetector Instance = new DefaultTokenBoundaryDetector();
 
-        public HashSet<int> DetectWordBeginnings(string s)
+        public IEnumerable<string> Tokenize(string text)
+        {
+            if (string.IsNullOrEmpty(text))
+                return Enumerable.Empty<string>();
+
+            var wordBeginnings = DetectWordBeginnings(text);
+            var wordEndings = DetectWordEndings(text);
+            
+            return wordBeginnings.OrderBy(i => i)
+                .Zip(wordEndings.OrderBy(i => i), (start, end) => text.Substring(start, end - start + 1));
+        }
+
+        private HashSet<int> DetectWordBeginnings(string s)
         {
             var indices = new HashSet<int>(s.Length) { };
             if (string.IsNullOrEmpty(s))
@@ -31,7 +43,7 @@
             return indices;
         }
 
-        public HashSet<int> DetectWordEndings(string s)
+        private HashSet<int> DetectWordEndings(string s)
         {
             var indices = new HashSet<int>();
             if (string.IsNullOrEmpty(s))

@@ -56,7 +56,7 @@ You can customize the behavior of the diff algorithm by providing `StringDiffOpt
 using DimonSmart.StringDiff;
 
 // Create custom options
-var options = new StringDiffOptions(10, DefaultWordBoundaryDetector.Instance);
+var options = new StringDiffOptions(10, DefaultTokenBoundaryDetector.Instance);
 
 // Create an instance of StringDiff with custom options
 var stringDiff = new StringDiff(options);
@@ -137,7 +137,7 @@ The `StringDiffOptions` record allows customization of the diff algorithm.
 #### Parameters
 
 - `MinCommonLength (int)`: Forces the differ to report longer changes. For example, if set to 10 (phone number length), the differ will prefer not to report single-letter changes.
-- `WordBoundaryDetector (IWordBoundaryDetector?)`: The word boundary detector to use for detecting word boundaries. If `null`, the default word boundary detection will be used.
+- `TokenBoundaryDetector (ITokenBoundaryDetector<string>?)`: The token boundary detector to use for detecting word or other token boundaries. If `null`, the default character-by-character tokenization will be used.
 
 ### TextDiff Class
 
@@ -159,22 +159,21 @@ The `TextEdit` class represents a single text edit.
 - `int Length`: The length of the text to be replaced.
 - `string Replacement`: The replacement text.
 
-### IWordBoundaryDetector Interface
+### ITokenBoundaryDetector Interface
 
-The `IWordBoundaryDetector` interface defines a method for detecting word boundaries in a string.
+The `ITokenBoundaryDetector<T>` interface defines a method for tokenizing input text into a sequence of tokens of type T.
 
 #### Methods
 
 - `HashSet<int> Detect(string s)`: Detects word boundaries in the specified string and returns a set of boundary indices.
 
-### DefaultWordBoundaryDetector Class
+### DefaultTokenBoundaryDetector Class
 
-The `DefaultWordBoundaryDetector` class provides a default implementation of `IWordBoundaryDetector` using regular expressions.
+The `DefaultTokenBoundaryDetector` class provides a default implementation of `ITokenBoundaryDetector<string>` that splits text into word-like tokens.
 
 #### Constructors
 
-- `DefaultWordBoundaryDetector()`: Initializes a new instance with the default word boundary regex pattern (`\b`).
-- `DefaultWordBoundaryDetector(string regexPattern)`: Initializes a new instance with the specified regex pattern.
+- `DefaultTokenBoundaryDetector()`: Initializes a new instance that splits text into words and non-word tokens.
 
 ### StringReconstructor Class
 

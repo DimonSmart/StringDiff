@@ -1,9 +1,6 @@
-﻿using System;
-using System.Linq;
-
 namespace DimonSmart.StringDiff;
 
-public static class LongestSubstringSearcher
+public static class TokenSequenceMatcher
 {
     public record SubstringDescription(int SourceStartIndex, int TargetStartIndex, int Length);
 
@@ -18,11 +15,18 @@ public static class LongestSubstringSearcher
                 options.MinCommonLength);
         }
 
-        return FindCommon(
-            options.TokenBoundaryDetector.Tokenize(source).ToArray(),
-            options.TokenBoundaryDetector.Tokenize(target).ToArray(),
-            string.Equals,
-            options.MinCommonLength);
+        var sourceTokens = options.TokenBoundaryDetector.Tokenize(source).ToArray();
+        var targetTokens = options.TokenBoundaryDetector.Tokenize(target).ToArray();
+
+        // Find token-based positions
+        var result = FindCommon(sourceTokens, targetTokens, string.Equals, options.MinCommonLength);
+
+        // Convert token positions to character positions
+        var sourceCharStart = sourceTokens.Take(result.SourceStartIndex).Sum(t => t.Length);
+        var targetCharStart = targetTokens.Take(result.TargetStartIndex).Sum(t => t.Length);
+        var charLength = sourceTokens.Skip(result.SourceStartIndex).Take(result.Length).Sum(t => t.Length);
+
+        return new SubstringDescription(sourceCharStart, targetCharStart, charLength);
     }
 
     private static SubstringDescription FindCommon<T>(

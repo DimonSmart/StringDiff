@@ -1,58 +1,98 @@
 ﻿namespace DimonSmart.StringDiff
 {
-
     public class GenericDiff<T>
     {
         public ITokenBoundaryDetector<T> Tokenizer { get; }
         public IEqualityComparer<T> Comparer { get; }
         public int MinCommonLength { get; }
+        private IReadOnlyList<T> SourceTokens { get; set; }
 
         public GenericDiff(ITokenBoundaryDetector<T> tokenizer, IEqualityComparer<T>? comparer = null, int minCommonLength = 1)
         {
             Tokenizer = tokenizer;
             Comparer = comparer ?? EqualityComparer<T>.Default;
             MinCommonLength = minCommonLength;
+            SourceTokens = Array.Empty<T>();
         }
 
-        public GenericTextDiff<T> ComputeDiff(string sourceText, string targetText)
+        public IReadOnlyCollection<TextEdit<T>> ComputeDiff(string sourceText, string targetText)
         {
             var sourceTokens = Tokenizer.Tokenize(sourceText).ToList();
+            SourceTokens = sourceTokens;
             var targetTokens = Tokenizer.Tokenize(targetText).ToList();
-            var edits = Diff(sourceTokens, targetTokens, 0).ToList();
-            return new GenericTextDiff<T>(sourceText, targetText, edits);
+            return Diff(sourceTokens, targetTokens, 0).ToList();
         }
 
-        // Recursive diff algorithm using longest common substring approach
         private IEnumerable<TextEdit<T>> Diff(IList<T> sourceTokens, IList<T> targetTokens, int offset)
         {
-            var edits = new List<TextEdit<T>>();
-
             if (sourceTokens.SequenceEqual(targetTokens, Comparer))
-            {
-                return edits;
-            }
+                return Enumerable.Empty<TextEdit<T>>();
 
-            if (!sourceTokens.Any() || !targetTokens.Any())
-            {
-                edits.Add(new TextEdit<T>(offset, sourceTokens.ToList(), targetTokens.ToList()));
-                return edits;
-            }
+            if (!sourceTokens.Any())
+                return new[] { new TextEdit<T>(offset, sourceTokens.ToList(), targetTokens.ToList(), SourceTokens) };
+
+            if (!targetTokens.Any())
+                return new[] { new TextEdit<T>(offset, sourceTokens.ToList(), targetTokens.ToList(), SourceTokens) };
 
             var common = GetLongestCommonSubstring(sourceTokens, targetTokens);
-            if (common.Length == 0)
+            if (common.Length == 0 || common.Length < MinCommonLength)
             {
-                edits.Add(new TextEdit<T>(offset, sourceTokens.ToList(), targetTokens.ToList()));
-                return edits;
+                var deletedTokens = sourceTokens.ToList();
+                var insertedTokens = targetTokens.ToList();
+
+                // If we have both deleted and inserted tokens, try to keep punctuation/spaces
+                if (deletedTokens.Any() && insertedTokens.Any())
+                {
+                    var lastSourceToken = deletedTokens.Last()?.ToString() ?? "";
+                    var lastTargetToken = insertedTokens.Last()?.ToString() ?? "";
+                    
+                    if (lastSourceToken.Length > 0 && !char.IsLetterOrDigit(lastSourceToken[^1]) && lastSourceToken == lastTargetToken)
+                    {
+                        deletedTokens = deletedTokens.Take(deletedTokens.Count - 1).ToList();
+                        insertedTokens = insertedTokens.Take(insertedTokens.Count - 1).ToList();
+                    }
+
+                    var firstSourceToken = deletedTokens.FirstOrDefault()?.ToString() ?? "";
+                    var firstTargetToken = insertedTokens.FirstOrDefault()?.ToString() ?? "";
+                    
+                    if (deletedTokens.Any() && insertedTokens.Any() && firstSourceToken.Length > 0 &&
+                        !char.IsLetterOrDigit(firstSourceToken[0]) && firstSourceToken == firstTargetToken)
+                    {
+                        deletedTokens = deletedTokens.Skip(1).ToList();
+                        insertedTokens = insertedTokens.Skip(1).ToList();
+                        offset += 1;
+                    }
+                }
+
+                if (deletedTokens.Any() || insertedTokens.Any())
+                {
+                    return new[] { new TextEdit<T>(offset, deletedTokens, insertedTokens, SourceTokens) };
+                }
+                return Enumerable.Empty<TextEdit<T>>();
             }
 
-            var leftSource = sourceTokens.Take(common.SourceStart).ToList();
-            var leftTarget = targetTokens.Take(common.TargetStart).ToList();
-            edits.AddRange(Diff(leftSource, leftTarget, offset));
+            var edits = new List<TextEdit<T>>();
 
-            var rightSource = sourceTokens.Skip(common.SourceStart + common.Length).ToList();
-            var rightTarget = targetTokens.Skip(common.TargetStart + common.Length).ToList();
-            var newOffset = offset + common.SourceStart + common.Length;
-            edits.AddRange(Diff(rightSource, rightTarget, newOffset));
+            // Handle prefix changes
+            if (common.SourceStart > 0 || common.TargetStart > 0)
+            {
+                edits.AddRange(Diff(
+                    sourceTokens.Take(common.SourceStart).ToList(),
+                    targetTokens.Take(common.TargetStart).ToList(),
+                    offset));
+            }
+
+            // Handle suffix changes
+            var sourceRightStart = common.SourceStart + common.Length;
+            var targetRightStart = common.TargetStart + common.Length;
+            
+            if (sourceRightStart < sourceTokens.Count || targetRightStart < targetTokens.Count)
+            {
+                edits.AddRange(Diff(
+                    sourceTokens.Skip(sourceRightStart).ToList(),
+                    targetTokens.Skip(targetRightStart).ToList(),
+                    offset + sourceRightStart));
+            }
 
             return edits;
         }
