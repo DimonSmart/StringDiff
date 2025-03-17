@@ -4,22 +4,21 @@ public static class TokenSequenceMatcher
 {
     public record SubstringDescription(int SourceStartIndex, int TargetStartIndex, int Length);
 
-    public static SubstringDescription GetLongestCommonSubstring(string source, string target, StringDiffOptions options)
+    public static SubstringDescription GetLongestCommonSubstring(ReadOnlySpan<char> source, ReadOnlySpan<char> target, StringDiffOptions options)
     {
         if (options.TokenBoundaryDetector == null)
         {
-            return FindCommon(
-                source.ToCharArray(),
-                target.ToCharArray(),
-                (a, b) => a == b,
-                options.MinCommonLength);
+            return FindCommon(source, target, (a, b) => a == b, options.MinCommonLength);
         }
 
-        var sourceTokens = options.TokenBoundaryDetector.Tokenize(source).ToArray();
-        var targetTokens = options.TokenBoundaryDetector.Tokenize(target).ToArray();
+        // For token-based comparison, we still need to use strings due to tokenization
+        var sourceStr = source.ToString();
+        var targetStr = target.ToString();
+        var sourceTokens = options.TokenBoundaryDetector.Tokenize(sourceStr).ToArray();
+        var targetTokens = options.TokenBoundaryDetector.Tokenize(targetStr).ToArray();
 
-        // Find token-based positions
-        var result = FindCommon(sourceTokens, targetTokens, string.Equals, options.MinCommonLength);
+        // Find token-based positions using array overload
+        var result = FindCommonArray(sourceTokens, targetTokens, string.Equals, options.MinCommonLength);
 
         // Convert token positions to character positions
         var sourceCharStart = sourceTokens.Take(result.SourceStartIndex).Sum(t => t.Length);
@@ -30,12 +29,17 @@ public static class TokenSequenceMatcher
     }
 
     private static SubstringDescription FindCommon<T>(
-        T[] source,
-        T[] target,
+        ReadOnlySpan<T> source,
+        ReadOnlySpan<T> target,
         Func<T, T, bool> comparer,
         int minCommonLength)
     {
-        var matrix = new int[source.Length + 1, target.Length + 1];
+        const int stackAllocThreshold = 1024;
+        var totalSize = (source.Length + 1) * (target.Length + 1);
+        var useStack = totalSize <= stackAllocThreshold;
+        
+        Span<int> matrixSpan = useStack ? stackalloc int[totalSize] : new int[totalSize];
+        
         var maxLength = 0;
         var sourceEndIndex = 0;
         var targetEndIndex = 0;
@@ -46,11 +50,13 @@ public static class TokenSequenceMatcher
             {
                 if (comparer(source[i - 1], target[j - 1]))
                 {
-                    matrix[i, j] = matrix[i - 1, j - 1] + 1;
+                    var idx = i * (target.Length + 1) + j;
+                    var prevIdx = (i - 1) * (target.Length + 1) + (j - 1);
+                    matrixSpan[idx] = matrixSpan[prevIdx] + 1;
 
-                    if (matrix[i, j] > maxLength && (minCommonLength == 0 || matrix[i, j] > minCommonLength))
+                    if (matrixSpan[idx] > maxLength && (minCommonLength == 0 || matrixSpan[idx] > minCommonLength))
                     {
-                        maxLength = matrix[i, j];
+                        maxLength = matrixSpan[idx];
                         sourceEndIndex = i;
                         targetEndIndex = j;
                     }
@@ -62,5 +68,15 @@ public static class TokenSequenceMatcher
             sourceEndIndex - maxLength,
             targetEndIndex - maxLength,
             maxLength);
+    }
+
+    // Separate method for array-based comparison to avoid type inference issues
+    private static SubstringDescription FindCommonArray<T>(
+        T[] source,
+        T[] target,
+        Func<T, T, bool> comparer,
+        int minCommonLength)
+    {
+        return FindCommon(new ReadOnlySpan<T>(source), new ReadOnlySpan<T>(target), comparer, minCommonLength);
     }
 }

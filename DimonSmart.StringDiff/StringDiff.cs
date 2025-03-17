@@ -24,18 +24,18 @@
                 return new TextDiff(sourceText, targetText, edits);
             }
 
-            return new TextDiff(sourceText, targetText, Diff(sourceText, targetText, 0).ToList());
+            return new TextDiff(sourceText, targetText, Diff(sourceText.AsSpan(), targetText.AsSpan(), 0).ToList());
         }
 
-        private IEnumerable<TextEdit> Diff(string source, string target, int offset)
+        private IEnumerable<TextEdit> Diff(ReadOnlySpan<char> source, ReadOnlySpan<char> target, int offset)
         {
             var result = new List<TextEdit>();
 
-            if (source == target) return result;
+            if (source.SequenceEqual(target)) return result;
 
-            if (source.Length == 0 || target.Length == 0)
+            if (source.IsEmpty || target.IsEmpty)
             {
-                result.Add(new TextEdit(offset, source.Length, target));
+                result.Add(new TextEdit(offset, source.Length, target.ToString()));
                 return result;
             }
 
@@ -43,13 +43,14 @@
 
             if (common.Length == 0 || common.Length <= Options.MinCommonLength)
             {
-                result.Add(new TextEdit(offset, source.Length, target));
+                result.Add(new TextEdit(offset, source.Length, target.ToString()));
                 return result;
             }
 
             result.AddRange(Diff(
                 source[..common.SourceStartIndex],
-                target[..common.TargetStartIndex], offset));
+                target[..common.TargetStartIndex],
+                offset));
             result.AddRange(Diff(
                 source[(common.SourceStartIndex + common.Length)..],
                 target[(common.TargetStartIndex + common.Length)..],
