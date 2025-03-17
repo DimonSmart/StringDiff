@@ -1,6 +1,6 @@
 ﻿namespace DimonSmart.StringDiff
 {
-    public class DefaultTokenBoundaryDetector : ITokenBoundaryDetector<string>
+    public class DefaultTokenBoundaryDetector : ITokenBoundaryDetector
     {
         public static DefaultTokenBoundaryDetector Instance = new DefaultTokenBoundaryDetector();
 

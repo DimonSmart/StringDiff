@@ -1,8 +1,8 @@
 ﻿namespace DimonSmart.StringDiff
 {
     // Interface for tokenization strategy
-    public interface ITokenBoundaryDetector<T>
+    public interface ITokenBoundaryDetector
     {
-        IEnumerable<T> Tokenize(string text);
+        IEnumerable<string> Tokenize(string text);
     }
 }

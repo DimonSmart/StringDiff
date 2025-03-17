@@ -6,7 +6,7 @@ namespace DimonSmart.StringDiff.Tests
     public class GenericDiffTests
     {
         // Tokenizer splits text into tokens using a regex that preserves words and non-word tokens.
-        private class RegexTokenBoundaryDetector : ITokenBoundaryDetector<string>
+        private class RegexTokenBoundaryDetector : ITokenBoundaryDetector
         {
             public IEnumerable<string> Tokenize(string text)
             {
@@ -21,7 +21,7 @@ namespace DimonSmart.StringDiff.Tests
         // Reconstructor for generic diff which rebuilds the target string from token-level edits.
         private class GenericStringReconstructor
         {
-            public string Reconstruct(IReadOnlyCollection<TextEdit<string>> edits, string source, ITokenBoundaryDetector<string> tokenizer)
+            public string Reconstruct(IReadOnlyCollection<GenericTextEdit<string>> edits, string source, ITokenBoundaryDetector tokenizer)
             {
                 var tokens = tokenizer.Tokenize(source).ToList();
                 var resultTokens = new List<string>();

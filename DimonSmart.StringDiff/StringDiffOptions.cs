@@ -7,7 +7,7 @@
 /// the differ will report the diff as whole line changes. </param>
 /// <param name="TokenBoundaryDetector"> The token boundary detector to use for detecting word or other token boundaries.
 /// If null, the default character-by-character tokenization will be used. </param>
-public record StringDiffOptions(int MinCommonLength, ITokenBoundaryDetector<string>? TokenBoundaryDetector = null)
+public record StringDiffOptions(int MinCommonLength, ITokenBoundaryDetector? TokenBoundaryDetector = null)
 {
     public static StringDiffOptions Default => new(0, null);
 }

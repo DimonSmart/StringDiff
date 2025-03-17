@@ -2,12 +2,12 @@
 {
     public class GenericDiff<T>
     {
-        public ITokenBoundaryDetector<T> Tokenizer { get; }
+        public ITokenBoundaryDetector Tokenizer { get; }
         public IEqualityComparer<T> Comparer { get; }
         public int MinCommonLength { get; }
         private IReadOnlyList<T> SourceTokens { get; set; }
 
-        public GenericDiff(ITokenBoundaryDetector<T> tokenizer, IEqualityComparer<T>? comparer = null, int minCommonLength = 1)
+        public GenericDiff(ITokenBoundaryDetector tokenizer, IEqualityComparer<T>? comparer = null, int minCommonLength = 1)
         {
             Tokenizer = tokenizer;
             Comparer = comparer ?? EqualityComparer<T>.Default;
@@ -15,24 +15,24 @@
             SourceTokens = Array.Empty<T>();
         }
 
-        public IReadOnlyCollection<TextEdit<T>> ComputeDiff(string sourceText, string targetText)
+        public IReadOnlyCollection<GenericTextEdit<T>> ComputeDiff(string sourceText, string targetText)
         {
-            var sourceTokens = Tokenizer.Tokenize(sourceText).ToList();
+            var sourceTokens = Tokenizer.Tokenize(sourceText).Cast<T>().ToList();
             SourceTokens = sourceTokens;
-            var targetTokens = Tokenizer.Tokenize(targetText).ToList();
+            var targetTokens = Tokenizer.Tokenize(targetText).Cast<T>().ToList();
             return Diff(sourceTokens, targetTokens, 0).ToList();
         }
 
-        private IEnumerable<TextEdit<T>> Diff(IList<T> sourceTokens, IList<T> targetTokens, int offset)
+        private IEnumerable<GenericTextEdit<T>> Diff(IList<T> sourceTokens, IList<T> targetTokens, int offset)
         {
             if (sourceTokens.SequenceEqual(targetTokens, Comparer))
-                return Enumerable.Empty<TextEdit<T>>();
+                return Enumerable.Empty<GenericTextEdit<T>>();
 
             if (!sourceTokens.Any())
-                return new[] { new TextEdit<T>(offset, sourceTokens.ToList(), targetTokens.ToList(), SourceTokens) };
+                return new[] { new GenericTextEdit<T>(offset, sourceTokens.ToList(), targetTokens.ToList(), SourceTokens) };
 
             if (!targetTokens.Any())
-                return new[] { new TextEdit<T>(offset, sourceTokens.ToList(), targetTokens.ToList(), SourceTokens) };
+                return new[] { new GenericTextEdit<T>(offset, sourceTokens.ToList(), targetTokens.ToList(), SourceTokens) };
 
             var common = GetLongestCommonSubstring(sourceTokens, targetTokens);
             if (common.Length == 0 || common.Length < MinCommonLength)
@@ -40,38 +40,14 @@
                 var deletedTokens = sourceTokens.ToList();
                 var insertedTokens = targetTokens.ToList();
 
-                // If we have both deleted and inserted tokens, try to keep punctuation/spaces
-                if (deletedTokens.Any() && insertedTokens.Any())
-                {
-                    var lastSourceToken = deletedTokens.Last()?.ToString() ?? "";
-                    var lastTargetToken = insertedTokens.Last()?.ToString() ?? "";
-                    
-                    if (lastSourceToken.Length > 0 && !char.IsLetterOrDigit(lastSourceToken[^1]) && lastSourceToken == lastTargetToken)
-                    {
-                        deletedTokens = deletedTokens.Take(deletedTokens.Count - 1).ToList();
-                        insertedTokens = insertedTokens.Take(insertedTokens.Count - 1).ToList();
-                    }
-
-                    var firstSourceToken = deletedTokens.FirstOrDefault()?.ToString() ?? "";
-                    var firstTargetToken = insertedTokens.FirstOrDefault()?.ToString() ?? "";
-                    
-                    if (deletedTokens.Any() && insertedTokens.Any() && firstSourceToken.Length > 0 &&
-                        !char.IsLetterOrDigit(firstSourceToken[0]) && firstSourceToken == firstTargetToken)
-                    {
-                        deletedTokens = deletedTokens.Skip(1).ToList();
-                        insertedTokens = insertedTokens.Skip(1).ToList();
-                        offset += 1;
-                    }
-                }
-
                 if (deletedTokens.Any() || insertedTokens.Any())
                 {
-                    return new[] { new TextEdit<T>(offset, deletedTokens, insertedTokens, SourceTokens) };
+                    return new[] { new GenericTextEdit<T>(offset, deletedTokens, insertedTokens, SourceTokens) };
                 }
-                return Enumerable.Empty<TextEdit<T>>();
+                return Enumerable.Empty<GenericTextEdit<T>>();
             }
 
-            var edits = new List<TextEdit<T>>();
+            var edits = new List<GenericTextEdit<T>>();
 
             // Handle prefix changes
             if (common.SourceStart > 0 || common.TargetStart > 0)
@@ -97,7 +73,6 @@
             return edits;
         }
 
-        // Dynamic programming implementation for longest common substring search
         private SubstringDescription GetLongestCommonSubstring(IList<T> source, IList<T> target)
         {
             var dp = new int[source.Count + 1, target.Count + 1];
