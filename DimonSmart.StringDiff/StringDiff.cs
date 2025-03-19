@@ -1,53 +1,54 @@
-﻿namespace DimonSmart.StringDiff
+﻿namespace DimonSmart.StringDiff;
+
+public class StringDiff(StringDiffOptions? options = null) : IStringDiff
 {
-    public class StringDiff : IStringDiff
+    public StringDiffOptions? Options { get; } = options;
+
+    public TextDiff ComputeDiff(string sourceText, string targetText)
     {
-        public StringDiffOptions Options { get; }
-
-        public StringDiff()
+        if (Options?.TokenBoundaryDetector != null)
         {
-            Options = new StringDiffOptions(0);
+            var genericDiff = new GenericDiff<string>(Options.TokenBoundaryDetector, null);
+            var genericEdits = genericDiff.ComputeDiff(sourceText, targetText);
+            var result = genericEdits.Select(e => e.ToStringEdit()).ToList();
+            return new TextDiff(sourceText, targetText, result);
         }
 
-        public StringDiff(StringDiffOptions options)
+        var edits = new List<TextEdit>();
+        DiffSpan(sourceText.AsSpan(), targetText.AsSpan(), 0, edits);
+        return new TextDiff(sourceText, targetText, edits);
+    }
+
+    private void DiffSpan(ReadOnlySpan<char> source, ReadOnlySpan<char> target, int offset, List<TextEdit> edits)
+    {
+        if (source.SequenceEqual(target)) return;
+
+        if (source.IsEmpty || target.IsEmpty)
         {
-            Options = options;
+            edits.Add(new TextEdit(offset, source.Length, target.ToString()));
+            return;
         }
 
-        public TextDiff ComputeDiff(string sourceText, string targetText)
+        var common = TokenSequenceMatcher.GetLongestCommonSubstring(source, target, Options);
+
+        if (common.Length == 0)
         {
-            return new TextDiff(sourceText, targetText, Diff(sourceText, targetText, 0).ToList());
+            edits.Add(new TextEdit(offset, source.Length, target.ToString()));
+            return;
         }
 
-        private IEnumerable<TextEdit> Diff(string source, string target, int offset)
-        {
-            var result = new List<TextEdit>();
+        // Process the part before the common substring
+        DiffSpan(
+            source[..common.SourceStartIndex],
+            target[..common.TargetStartIndex],
+            offset,
+            edits);
 
-            if (source == target) return result;
-
-            if (source.Length == 0 || target.Length == 0)
-            {
-                result.Add(new TextEdit(offset, source.Length, target));
-                return result;
-            }
-
-            var common = LongestSubstringSearcher.GetLongestCommonSubstring(source, target, Options);
-
-            if (common.Length == 0 || common.Length <= Options.MinCommonLength)
-            {
-                result.Add(new TextEdit(offset, source.Length, target));
-                return result;
-            }
-
-            result.AddRange(Diff(
-                source[..common.SourceStartIndex],
-                target[..common.TargetStartIndex], offset));
-            result.AddRange(Diff(
-                source[(common.SourceStartIndex + common.Length)..],
-                target[(common.TargetStartIndex + common.Length)..],
-                offset + common.SourceStartIndex + common.Length));
-
-            return result;
-        }
+        // Process the part after the common substring
+        DiffSpan(
+            source[(common.SourceStartIndex + common.Length)..],
+            target[(common.TargetStartIndex + common.Length)..],
+            offset + common.SourceStartIndex + common.Length,
+            edits);
     }
 }

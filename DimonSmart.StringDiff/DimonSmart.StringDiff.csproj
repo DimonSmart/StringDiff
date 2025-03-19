@@ -25,6 +25,10 @@
 	</PropertyGroup>
 
 	<ItemGroup>
+		<InternalsVisibleTo Include="DimonSmart.StringDiffTests" />
+	</ItemGroup>
+
+	<ItemGroup>
 		<None Include="..\README.md" Pack="True" PackagePath="/" />
 		<None Include="StringDiffIcon.png" Pack="True" PackagePath="/" />
 	</ItemGroup>

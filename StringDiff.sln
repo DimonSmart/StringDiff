@@ -7,13 +7,12 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DimonSmart.StringDiff", "Di
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DimonSmart.StringDiffTests", "DimonSmart.StringDiffTests\DimonSmart.StringDiffTests.csproj", "{627C5033-4FF7-4EFE-83C6-F69F4CD5D953}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DimonSmart.StringDiff.Benchmarks", "DimonSmart.StringDiff.Benchmarks\DimonSmart.StringDiff.Benchmarks.csproj", "{4D619C0A-A08E-0024-C306-8BB394774594}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
 		Release|Any CPU = Release|Any CPU
-	EndGlobalSection
-	GlobalSection(SolutionProperties) = preSolution
-		HideSolutionNode = FALSE
 	EndGlobalSection
 	GlobalSection(ProjectConfigurationPlatforms) = postSolution
 		{D4616AAC-2355-433F-9A56-BBE9B0D57FB1}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
@@ -24,5 +23,15 @@ Global
 		{627C5033-4FF7-4EFE-83C6-F69F4CD5D953}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{627C5033-4FF7-4EFE-83C6-F69F4CD5D953}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{627C5033-4FF7-4EFE-83C6-F69F4CD5D953}.Release|Any CPU.Build.0 = Release|Any CPU
+		{4D619C0A-A08E-0024-C306-8BB394774594}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{4D619C0A-A08E-0024-C306-8BB394774594}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{4D619C0A-A08E-0024-C306-8BB394774594}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{4D619C0A-A08E-0024-C306-8BB394774594}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {04E3AA3B-0B22-4C9F-B61A-2DADB3CEAB07}
 	EndGlobalSection
 EndGlobal

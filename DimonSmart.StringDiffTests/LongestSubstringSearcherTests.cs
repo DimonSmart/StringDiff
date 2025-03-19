@@ -3,7 +3,7 @@ using Xunit;
 
 namespace DimonSmart.StringDiffTests
 {
-    public class LongestSubstringSearcherTests
+    public class TokenSequenceMatcherTests
     {
         [Theory]
         [InlineData("", "", 0, 0, 0)]
@@ -13,9 +13,9 @@ namespace DimonSmart.StringDiffTests
         [InlineData("abcde", "cde", 2, 0, 3)]
         [InlineData("abcdeabcde", "abcde", 0, 0, 5)]
         [InlineData("Hello world", "Hello World!", 0, 0, 6)]
-        public void LongestCommonSubstringTests(string source, string destination, int expectedSourceStartIndex, int expectedDestinationStartIndex, int expectedLength)
+        public void GetLongestCommonSubstringTests(string source, string destination, int expectedSourceStartIndex, int expectedDestinationStartIndex, int expectedLength)
         {
-            var result = LongestSubstringSearcher.GetLongestCommonSubstring(source, destination, StringDiffOptions.Default);
+            var result = TokenSequenceMatcher.GetLongestCommonSubstring(source, destination, new StringDiffOptions());
             Assert.Equal(expectedSourceStartIndex, result.SourceStartIndex);
             Assert.Equal(expectedDestinationStartIndex, result.TargetStartIndex);
             Assert.Equal(expectedLength, result.Length);
@@ -29,9 +29,9 @@ namespace DimonSmart.StringDiffTests
         [InlineData("abcde", "cde", 0, 0, 0)]
         [InlineData("abc abcde", "abcde", 4, 0, 5)]
         [InlineData("Hello world", "Hello World!", 0, 0, 6)]
-        public void LongestCommonSubstringRespectWordBoundariesTests(string source, string destination, int expectedSourceStartIndex, int expectedDestinationStartIndex, int expectedLength)
+        public void GetLongestCommonSubstringRespectTokenBoundariesTests(string source, string destination, int expectedSourceStartIndex, int expectedDestinationStartIndex, int expectedLength)
         {
-            var result = LongestSubstringSearcher.GetLongestCommonSubstring(source, destination, new StringDiffOptions(0, new DefaultWordBoundaryDetector()));
+            var result = TokenSequenceMatcher.GetLongestCommonSubstring(source, destination, new StringDiffOptions(SimpleTokenBoundaryDetector.Instance));
             Assert.Equal(expectedSourceStartIndex, result.SourceStartIndex);
             Assert.Equal(expectedDestinationStartIndex, result.TargetStartIndex);
             Assert.Equal(expectedLength, result.Length);

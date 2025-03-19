@@ -1,3 +1,8 @@
 ﻿namespace DimonSmart.StringDiff;
 
-public record TextEdit(int StartPosition, int DeletedLength, string InsertedText);
+public readonly struct TextEdit(int startPosition, int deletedLength, string insertedText)
+{
+    public int StartPosition { get; } = startPosition;
+    public int DeletedLength { get; } = deletedLength;
+    public string InsertedText { get; } = insertedText;
+}
