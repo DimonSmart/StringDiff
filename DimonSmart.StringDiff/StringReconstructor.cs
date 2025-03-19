@@ -39,7 +39,7 @@ public class StringReconstructor
         return result.ToString();
     }
 
-    public static StringReconstructor Instance = new StringReconstructor();
+    public static StringReconstructor Instance = new();
 
     protected virtual string FormatInsertedText(string text) => text;
 
