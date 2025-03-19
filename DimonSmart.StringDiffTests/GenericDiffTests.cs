@@ -1,7 +1,8 @@
-﻿using System.Text.RegularExpressions;
+﻿using DimonSmart.StringDiff;
+using System.Text.RegularExpressions;
 using Xunit;
 
-namespace DimonSmart.StringDiff.Tests
+namespace DimonSmart.StringDiffTests
 {
     public class GenericDiffTests
     {
@@ -18,33 +19,30 @@ namespace DimonSmart.StringDiff.Tests
             }
         }
 
-        // Reconstructor for generic diff which rebuilds the target string from token-level edits.
-        private class GenericStringReconstructor
+        public static string Reconstruct(IReadOnlyCollection<GenericTextEdit<string>> edits, string source, ITokenBoundaryDetector tokenizer)
         {
-            public string Reconstruct(IReadOnlyCollection<GenericTextEdit<string>> edits, string source, ITokenBoundaryDetector tokenizer)
+            var tokens = tokenizer.Tokenize(source).ToList();
+            var resultTokens = new List<string>();
+            var currentIndex = 0;
+            // Process edits in order of increasing start position.
+            foreach (var edit in edits.OrderBy(e => e.StartPosition))
             {
-                var tokens = tokenizer.Tokenize(source).ToList();
-                var resultTokens = new List<string>();
-                var currentIndex = 0;
-                // Process edits in order of increasing start position.
-                foreach (var edit in edits.OrderBy(e => e.StartPosition))
-                {
-                    while (currentIndex < edit.StartPosition && currentIndex < tokens.Count)
-                    {
-                        resultTokens.Add(tokens[currentIndex]);
-                        currentIndex++;
-                    }
-                    resultTokens.AddRange(edit.InsertedTokens);
-                    currentIndex += edit.DeletedTokens.Count;
-                }
-                while (currentIndex < tokens.Count)
+                while (currentIndex < edit.StartPosition && currentIndex < tokens.Count)
                 {
                     resultTokens.Add(tokens[currentIndex]);
                     currentIndex++;
                 }
-                return string.Concat(resultTokens);
+                resultTokens.AddRange(edit.InsertedTokens);
+                currentIndex += edit.DeletedTokens.Count;
             }
+            while (currentIndex < tokens.Count)
+            {
+                resultTokens.Add(tokens[currentIndex]);
+                currentIndex++;
+            }
+            return string.Concat(resultTokens);
         }
+
 
         [Theory]
         [InlineData("To be or not to be", "To be or not to bee")]
@@ -60,11 +58,10 @@ namespace DimonSmart.StringDiff.Tests
             // Arrange
             var tokenizer = new RegexTokenBoundaryDetector();
             var genericDiff = new GenericDiff<string>(tokenizer, minCommonLength: 10);
-            var reconstructor = new GenericStringReconstructor();
-
+          
             // Act
             var edits = genericDiff.ComputeDiff(source, target);
-            var reconstructedTarget = reconstructor.Reconstruct(edits, source, tokenizer);
+            var reconstructedTarget = Reconstruct(edits, source, tokenizer);
 
             // Assert
             Assert.True(edits.Count <= 1);

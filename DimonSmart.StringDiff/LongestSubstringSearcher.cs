@@ -1,7 +1,4 @@
-﻿using System;
-using System.Linq;
-
-namespace DimonSmart.StringDiff;
+﻿namespace DimonSmart.StringDiff;
 
 public static class LongestSubstringSearcher
 {
