@@ -4,14 +4,12 @@
     {
         public ITokenBoundaryDetector Tokenizer { get; }
         public IEqualityComparer<T> Comparer { get; }
-        public int MinCommonLength { get; }
         private IReadOnlyList<T> SourceTokens { get; set; }
 
-        public GenericDiff(ITokenBoundaryDetector tokenizer, IEqualityComparer<T>? comparer = null, int minCommonLength = 1)
+        public GenericDiff(ITokenBoundaryDetector tokenizer, IEqualityComparer<T>? comparer = null)
         {
             Tokenizer = tokenizer;
             Comparer = comparer ?? EqualityComparer<T>.Default;
-            MinCommonLength = minCommonLength;
             SourceTokens = Array.Empty<T>();
         }
 
@@ -35,7 +33,7 @@
                 return new[] { new GenericTextEdit<T>(offset, sourceTokens.ToList(), targetTokens.ToList(), SourceTokens) };
 
             var common = GetLongestCommonSubstring(sourceTokens, targetTokens);
-            if (common.Length == 0 || common.Length < MinCommonLength)
+            if (common.Length == 0)
             {
                 var deletedTokens = sourceTokens.ToList();
                 var insertedTokens = targetTokens.ToList();
@@ -86,7 +84,7 @@
                     if (Comparer.Equals(source[i - 1], target[j - 1]))
                     {
                         dp[i, j] = dp[i - 1, j - 1] + 1;
-                        if (dp[i, j] > maxLen && dp[i, j] >= MinCommonLength)
+                        if (dp[i, j] > maxLen)
                         {
                             maxLen = dp[i, j];
                             sourceIndex = i - maxLen;

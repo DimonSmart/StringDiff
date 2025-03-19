@@ -11,22 +11,19 @@ public static class LongestSubstringSearcher
             return FindCommon(
                 source.ToCharArray(),
                 target.ToCharArray(),
-                (a, b) => a == b,
-                options.MinCommonLength);
+                (a, b) => a == b);
         }
 
         return FindCommon(
             options.TokenBoundaryDetector.Tokenize(source).ToArray(),
             options.TokenBoundaryDetector.Tokenize(target).ToArray(),
-            string.Equals,
-            options.MinCommonLength);
+            string.Equals);
     }
 
     private static SubstringDescription FindCommon<T>(
         T[] source,
         T[] target,
-        Func<T, T, bool> comparer,
-        int minCommonLength)
+        Func<T, T, bool> comparer)
     {
         var matrix = new int[source.Length + 1, target.Length + 1];
         var maxLength = 0;
@@ -41,7 +38,7 @@ public static class LongestSubstringSearcher
                 {
                     matrix[i, j] = matrix[i - 1, j - 1] + 1;
 
-                    if (matrix[i, j] > maxLength && (minCommonLength == 0 || matrix[i, j] > minCommonLength))
+                    if (matrix[i, j] > maxLength)
                     {
                         maxLength = matrix[i, j];
                         sourceEndIndex = i;

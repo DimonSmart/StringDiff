@@ -4,11 +4,11 @@ public static class TokenSequenceMatcher
 {
     public record SubstringDescription(int SourceStartIndex, int TargetStartIndex, int Length);
 
-    public static SubstringDescription GetLongestCommonSubstring(ReadOnlySpan<char> source, ReadOnlySpan<char> target, StringDiffOptions options)
+    public static SubstringDescription GetLongestCommonSubstring(ReadOnlySpan<char> source, ReadOnlySpan<char> target, StringDiffOptions? options)
     {
-        if (options.TokenBoundaryDetector == null)
+        if (options?.TokenBoundaryDetector == null)
         {
-            return FindCommon(source, target, (a, b) => a == b, options.MinCommonLength);
+            return FindCommon(source, target, (a, b) => a == b);
         }
 
         // For token-based comparison, we still need to use strings due to tokenization
@@ -18,7 +18,7 @@ public static class TokenSequenceMatcher
         var targetTokens = options.TokenBoundaryDetector.Tokenize(targetStr).ToArray();
 
         // Find token-based positions using array overload
-        var result = FindCommonArray(sourceTokens, targetTokens, string.Equals, options.MinCommonLength);
+        var result = FindCommonArray(sourceTokens, targetTokens, string.Equals);
 
         // Convert token positions to character positions
         var sourceCharStart = sourceTokens.Take(result.SourceStartIndex).Sum(t => t.Length);
@@ -31,8 +31,7 @@ public static class TokenSequenceMatcher
     private static SubstringDescription FindCommon<T>(
         ReadOnlySpan<T> source,
         ReadOnlySpan<T> target,
-        Func<T, T, bool> comparer,
-        int minCommonLength)
+        Func<T, T, bool> comparer)
     {
         const int stackAllocThreshold = 1024;
         var totalSize = (source.Length + 1) * (target.Length + 1);
@@ -54,7 +53,7 @@ public static class TokenSequenceMatcher
                     var prevIdx = (i - 1) * (target.Length + 1) + (j - 1);
                     matrixSpan[idx] = matrixSpan[prevIdx] + 1;
 
-                    if (matrixSpan[idx] > maxLength && (minCommonLength == 0 || matrixSpan[idx] > minCommonLength))
+                    if (matrixSpan[idx] > maxLength)
                     {
                         maxLength = matrixSpan[idx];
                         sourceEndIndex = i;
@@ -74,9 +73,8 @@ public static class TokenSequenceMatcher
     private static SubstringDescription FindCommonArray<T>(
         T[] source,
         T[] target,
-        Func<T, T, bool> comparer,
-        int minCommonLength)
+        Func<T, T, bool> comparer)
     {
-        return FindCommon(new ReadOnlySpan<T>(source), new ReadOnlySpan<T>(target), comparer, minCommonLength);
+        return FindCommon(new ReadOnlySpan<T>(source), new ReadOnlySpan<T>(target), comparer);
     }
 }

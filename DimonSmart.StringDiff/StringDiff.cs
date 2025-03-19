@@ -1,24 +1,14 @@
 ﻿namespace DimonSmart.StringDiff
 {
-    public class StringDiff : IStringDiff
+    public class StringDiff(StringDiffOptions? options = null) : IStringDiff
     {
-        public StringDiffOptions Options { get; }
-
-        public StringDiff()
-        {
-            Options = new StringDiffOptions(0);
-        }
-
-        public StringDiff(StringDiffOptions options)
-        {
-            Options = options;
-        }
+        public StringDiffOptions? Options { get; } = options;
 
         public TextDiff ComputeDiff(string sourceText, string targetText)
         {
-            if (Options.TokenBoundaryDetector != null)
+            if (Options?.TokenBoundaryDetector != null)
             {
-                var genericDiff = new GenericDiff<string>(Options.TokenBoundaryDetector, null, Options.MinCommonLength);
+                var genericDiff = new GenericDiff<string>(Options.TokenBoundaryDetector, null);
                 var genericEdits = genericDiff.ComputeDiff(sourceText, targetText);
                 var edits = genericEdits.Select(e => e.ToStringEdit()).ToList();
                 return new TextDiff(sourceText, targetText, edits);
@@ -41,7 +31,7 @@
 
             var common = TokenSequenceMatcher.GetLongestCommonSubstring(source, target, Options);
 
-            if (common.Length == 0 || common.Length <= Options.MinCommonLength)
+            if (common.Length == 0)
             {
                 result.Add(new TextEdit(offset, source.Length, target.ToString()));
                 return result;

@@ -15,7 +15,7 @@ namespace DimonSmart.StringDiffTests
         [InlineData("Hello world", "Hello World!", 0, 0, 6)]
         public void GetLongestCommonSubstringTests(string source, string destination, int expectedSourceStartIndex, int expectedDestinationStartIndex, int expectedLength)
         {
-            var result = TokenSequenceMatcher.GetLongestCommonSubstring(source, destination, StringDiffOptions.Default);
+            var result = TokenSequenceMatcher.GetLongestCommonSubstring(source, destination, new StringDiffOptions());
             Assert.Equal(expectedSourceStartIndex, result.SourceStartIndex);
             Assert.Equal(expectedDestinationStartIndex, result.TargetStartIndex);
             Assert.Equal(expectedLength, result.Length);
@@ -31,7 +31,7 @@ namespace DimonSmart.StringDiffTests
         [InlineData("Hello world", "Hello World!", 0, 0, 6)]
         public void GetLongestCommonSubstringRespectTokenBoundariesTests(string source, string destination, int expectedSourceStartIndex, int expectedDestinationStartIndex, int expectedLength)
         {
-            var result = TokenSequenceMatcher.GetLongestCommonSubstring(source, destination, new StringDiffOptions(0, new DefaultTokenBoundaryDetector()));
+            var result = TokenSequenceMatcher.GetLongestCommonSubstring(source, destination, new StringDiffOptions(new DefaultTokenBoundaryDetector()));
             Assert.Equal(expectedSourceStartIndex, result.SourceStartIndex);
             Assert.Equal(expectedDestinationStartIndex, result.TargetStartIndex);
             Assert.Equal(expectedLength, result.Length);

@@ -53,18 +53,17 @@ namespace DimonSmart.StringDiffTests
         [InlineData("Non-empty", "")]
         [InlineData("Same text", "Same text")]
         [InlineData("1234567890", "0987654321")]
-        public void ComputeGenericDiff_ShouldRespectMinLengthOptionSpecified(string source, string target)
+        public void ComputeGenericDiff_ShouldRespectCharacterBoundaries(string source, string target)
         {
             // Arrange
-            var tokenizer = new RegexTokenBoundaryDetector();
-            var genericDiff = new GenericDiff<string>(tokenizer, minCommonLength: 10);
+            var tokenizer = new DefaultTokenBoundaryDetector();
+            var genericDiff = new GenericDiff<string>(tokenizer);
           
             // Act
             var edits = genericDiff.ComputeDiff(source, target);
             var reconstructedTarget = Reconstruct(edits, source, tokenizer);
 
             // Assert
-            Assert.True(edits.Count <= 1);
             Assert.Equal(target, reconstructedTarget);
         }
     }
