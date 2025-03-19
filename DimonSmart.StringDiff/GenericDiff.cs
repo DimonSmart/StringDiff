@@ -1,106 +1,151 @@
-﻿namespace DimonSmart.StringDiff
+﻿namespace DimonSmart.StringDiff;
+
+public class GenericDiff<T>
 {
-    public class GenericDiff<T>
+    public ITokenBoundaryDetector Tokenizer { get; }
+    public IEqualityComparer<T> Comparer { get; }
+    private ReadOnlyMemory<T> SourceTokensMemory { get; set; }
+
+    public GenericDiff(ITokenBoundaryDetector tokenizer, IEqualityComparer<T>? comparer = null)
     {
-        public ITokenBoundaryDetector Tokenizer { get; }
-        public IEqualityComparer<T> Comparer { get; }
-        private IReadOnlyList<T> SourceTokens { get; set; }
+        Tokenizer = tokenizer;
+        Comparer = comparer ?? EqualityComparer<T>.Default;
+        SourceTokensMemory = Array.Empty<T>();
+    }
 
-        public GenericDiff(ITokenBoundaryDetector tokenizer, IEqualityComparer<T>? comparer = null)
+    public IReadOnlyCollection<GenericTextEdit<T>> ComputeDiff(string sourceText, string targetText)
+    {
+        // Use stackalloc for small inputs
+        const int stackAllocThreshold = 256;
+        bool useStack = sourceText.Length <= stackAllocThreshold;
+
+        Span<Range> sourceRanges = useStack ? stackalloc Range[sourceText.Length] : new Range[sourceText.Length];
+        Span<Range> targetRanges = useStack ? stackalloc Range[targetText.Length] : new Range[targetText.Length];
+
+        Tokenizer.TokenizeSpan(sourceText.AsSpan(), sourceRanges, out int sourceTokenCount);
+        Tokenizer.TokenizeSpan(targetText.AsSpan(), targetRanges, out int targetTokenCount);
+
+        // Convert ranges to tokens only once
+        var sourceTokens = new T[sourceTokenCount];
+        var targetTokens = new T[targetTokenCount];
+        
+        var sourceSpan = sourceText.AsSpan();
+        var targetSpan = targetText.AsSpan();
+        
+        for (int i = 0; i < sourceTokenCount; i++)
         {
-            Tokenizer = tokenizer;
-            Comparer = comparer ?? EqualityComparer<T>.Default;
-            SourceTokens = Array.Empty<T>();
+            sourceTokens[i] = (T)(object)sourceSpan[sourceRanges[i]].ToString();
+        }
+        for (int i = 0; i < targetTokenCount; i++)
+        {
+            targetTokens[i] = (T)(object)targetSpan[targetRanges[i]].ToString();
         }
 
-        public IReadOnlyCollection<GenericTextEdit<T>> ComputeDiff(string sourceText, string targetText)
+        SourceTokensMemory = sourceTokens;
+        var result = new List<GenericTextEdit<T>>();
+        DiffSpan(sourceTokens, targetTokens, 0, result);
+        return result;
+    }
+
+    private void DiffSpan(
+        ReadOnlyMemory<T> source,
+        ReadOnlyMemory<T> target,
+        int offset,
+        List<GenericTextEdit<T>> edits)
+    {
+        var sourceSpan = source.Span;
+        var targetSpan = target.Span;
+
+        if (sourceSpan.IsEmpty && targetSpan.IsEmpty) return;
+
+        if (sourceSpan.IsEmpty)
         {
-            var sourceTokens = Tokenizer.Tokenize(sourceText).Cast<T>().ToList();
-            SourceTokens = sourceTokens;
-            var targetTokens = Tokenizer.Tokenize(targetText).Cast<T>().ToList();
-            return Diff(sourceTokens, targetTokens, 0).ToList();
+            edits.Add(new GenericTextEdit<T>(
+                offset,
+                Array.Empty<T>(),
+                target.ToArray(),
+                SourceTokensMemory.ToArray()));
+            return;
         }
 
-        private IEnumerable<GenericTextEdit<T>> Diff(IList<T> sourceTokens, IList<T> targetTokens, int offset)
+        if (targetSpan.IsEmpty)
         {
-            if (sourceTokens.SequenceEqual(targetTokens, Comparer))
-                return Enumerable.Empty<GenericTextEdit<T>>();
+            edits.Add(new GenericTextEdit<T>(
+                offset,
+                source.ToArray(),
+                Array.Empty<T>(),
+                SourceTokensMemory.ToArray()));
+            return;
+        }
 
-            if (!sourceTokens.Any())
-                return new[] { new GenericTextEdit<T>(offset, sourceTokens.ToList(), targetTokens.ToList(), SourceTokens) };
+        var common = GetLongestCommonSubstring(sourceSpan, targetSpan);
+        if (common.Length == 0)
+        {
+            edits.Add(new GenericTextEdit<T>(
+                offset,
+                source.ToArray(),
+                target.ToArray(),
+                SourceTokensMemory.ToArray()));
+            return;
+        }
 
-            if (!targetTokens.Any())
-                return new[] { new GenericTextEdit<T>(offset, sourceTokens.ToList(), targetTokens.ToList(), SourceTokens) };
+        // Process the part before the common substring
+        DiffSpan(
+            source[..common.SourceStartIndex],
+            target[..common.TargetStartIndex],
+            offset,
+            edits);
 
-            var common = GetLongestCommonSubstring(sourceTokens, targetTokens);
-            if (common.Length == 0)
+        // Process the part after the common substring
+        DiffSpan(
+            source[(common.SourceStartIndex + common.Length)..],
+            target[(common.TargetStartIndex + common.Length)..],
+            offset + common.SourceStartIndex + common.Length,
+            edits);
+    }
+
+    private TokenSequenceMatcher.SubstringDescription GetLongestCommonSubstring(
+        ReadOnlySpan<T> source,
+        ReadOnlySpan<T> target)
+    {
+        const int stackAllocThreshold = 1024;
+        var totalSize = (source.Length + 1) * (target.Length + 1);
+        var useStack = totalSize <= stackAllocThreshold;
+
+        Span<int> matrixSpan = useStack ? stackalloc int[totalSize] : new int[totalSize];
+
+        var maxLength = 0;
+        var sourceEndIndex = 0;
+        var targetEndIndex = 0;
+
+        for (var i = 1; i <= source.Length; i++)
+        {
+            for (var j = 1; j <= target.Length; j++)
             {
-                var deletedTokens = sourceTokens.ToList();
-                var insertedTokens = targetTokens.ToList();
-
-                if (deletedTokens.Any() || insertedTokens.Any())
+                if (Comparer.Equals(source[i - 1], target[j - 1]))
                 {
-                    return new[] { new GenericTextEdit<T>(offset, deletedTokens, insertedTokens, SourceTokens) };
+                    var idx = i * (target.Length + 1) + j;
+                    var prevIdx = (i - 1) * (target.Length + 1) + (j - 1);
+                    matrixSpan[idx] = matrixSpan[prevIdx] + 1;
+
+                    if (matrixSpan[idx] > maxLength)
+                    {
+                        maxLength = matrixSpan[idx];
+                        sourceEndIndex = i;
+                        targetEndIndex = j;
+                    }
                 }
-                return Enumerable.Empty<GenericTextEdit<T>>();
             }
-
-            var edits = new List<GenericTextEdit<T>>();
-
-            // Handle prefix changes
-            if (common.SourceStart > 0 || common.TargetStart > 0)
-            {
-                edits.AddRange(Diff(
-                    sourceTokens.Take(common.SourceStart).ToList(),
-                    targetTokens.Take(common.TargetStart).ToList(),
-                    offset));
-            }
-
-            // Handle suffix changes
-            var sourceRightStart = common.SourceStart + common.Length;
-            var targetRightStart = common.TargetStart + common.Length;
-            
-            if (sourceRightStart < sourceTokens.Count || targetRightStart < targetTokens.Count)
-            {
-                edits.AddRange(Diff(
-                    sourceTokens.Skip(sourceRightStart).ToList(),
-                    targetTokens.Skip(targetRightStart).ToList(),
-                    offset + sourceRightStart));
-            }
-
-            return edits;
         }
 
-        private SubstringDescription GetLongestCommonSubstring(IList<T> source, IList<T> target)
+        if (!useStack)
         {
-            var dp = new int[source.Count + 1, target.Count + 1];
-            var maxLen = 0;
-            int sourceIndex = 0, targetIndex = 0;
-
-            for (var i = 1; i <= source.Count; i++)
-            {
-                for (var j = 1; j <= target.Count; j++)
-                {
-                    if (Comparer.Equals(source[i - 1], target[j - 1]))
-                    {
-                        dp[i, j] = dp[i - 1, j - 1] + 1;
-                        if (dp[i, j] > maxLen)
-                        {
-                            maxLen = dp[i, j];
-                            sourceIndex = i - maxLen;
-                            targetIndex = j - maxLen;
-                        }
-                    }
-                    else
-                    {
-                        dp[i, j] = 0;
-                    }
-                }
-            }
-
-            return new SubstringDescription(sourceIndex, targetIndex, maxLen);
+            matrixSpan = default;
         }
 
-        private record SubstringDescription(int SourceStart, int TargetStart, int Length);
+        return new TokenSequenceMatcher.SubstringDescription(
+            sourceEndIndex - maxLength,
+            targetEndIndex - maxLength,
+            maxLength);
     }
 }

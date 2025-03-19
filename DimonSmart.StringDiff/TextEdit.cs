@@ -1,10 +1,46 @@
 ﻿namespace DimonSmart.StringDiff;
 
-/// <summary>
-/// Represents a text edit operation, including the start position, the length of text to be deleted, and the text to be inserted.
-/// The deleted and inserted combination results in a text update or replacement.
-/// </summary>
-/// <param name="StartPosition">The starting position of the edit in the source text.</param>
-/// <param name="DeletedLength">The length of the text to be deleted.</param>
-/// <param name="InsertedText">The text to be inserted.</param>
-public record TextEdit(int StartPosition, int DeletedLength, string InsertedText);
+public readonly struct TextEdit : IEquatable<TextEdit>
+{
+    public int StartPosition { get; }
+    public int DeletedLength { get; }
+    public string InsertedText { get; }
+
+    public TextEdit(int startPosition, int deletedLength, string insertedText)
+    {
+        StartPosition = startPosition;
+        DeletedLength = deletedLength;
+        InsertedText = insertedText;
+    }
+
+    public bool Equals(TextEdit other)
+    {
+        return StartPosition == other.StartPosition 
+            && DeletedLength == other.DeletedLength 
+            && string.Equals(InsertedText, other.InsertedText);
+    }
+
+    public override bool Equals(object? obj)
+    {
+        return obj is TextEdit edit && Equals(edit);
+    }
+
+    public override int GetHashCode()
+    {
+        var hash = new HashCode();
+        hash.Add(StartPosition);
+        hash.Add(DeletedLength);
+        hash.Add(InsertedText);
+        return hash.ToHashCode();
+    }
+    
+    public static bool operator ==(TextEdit left, TextEdit right)
+    {
+        return left.Equals(right);
+    }
+
+    public static bool operator !=(TextEdit left, TextEdit right)
+    {
+        return !(left == right);
+    }
+}
