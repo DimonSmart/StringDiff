@@ -17,6 +17,22 @@ namespace DimonSmart.StringDiffTests
                     yield return match.Value;
                 }
             }
+
+            public void TokenizeSpan(ReadOnlySpan<char> text, Span<Range> tokenRanges, out int tokenCount)
+            {
+                // Convert to string since Regex doesn't work with Span<char>
+                var str = text.ToString();
+                var matches = Regex.Matches(str, @"\w+|\W+");
+                tokenCount = 0;
+
+                foreach (Match match in matches)
+                {
+                    if (tokenCount < tokenRanges.Length)
+                    {
+                        tokenRanges[tokenCount++] = new Range(match.Index, match.Index + match.Length);
+                    }
+                }
+            }
         }
 
         public static string Reconstruct(IReadOnlyCollection<GenericTextEdit<string>> edits, string source, ITokenBoundaryDetector tokenizer)
@@ -42,7 +58,6 @@ namespace DimonSmart.StringDiffTests
             }
             return string.Concat(resultTokens);
         }
-
 
         [Theory]
         [InlineData("To be or not to be", "To be or not to bee")]
