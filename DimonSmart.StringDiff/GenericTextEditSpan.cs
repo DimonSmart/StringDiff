@@ -1,6 +1,6 @@
 namespace DimonSmart.StringDiff;
 
-public readonly struct GenericTextEditSpan<T>
+internal readonly struct GenericTextEditSpan<T>
 {
     public int StartPosition { get; }
     public ReadOnlyMemory<T> DeletedTokens { get; }

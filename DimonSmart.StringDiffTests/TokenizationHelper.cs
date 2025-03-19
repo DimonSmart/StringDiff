@@ -1,4 +1,6 @@
-namespace DimonSmart.StringDiff;
+using DimonSmart.StringDiff;
+
+namespace DimonSmart.StringDiffTests;
 
 public static class TokenizationHelper
 {

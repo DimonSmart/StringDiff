@@ -45,7 +45,7 @@ namespace DimonSmart.StringDiffTests
         public void ComputeDiff_ShouldRespectWordBoundariesOptionSpecified(string source, string target, string[] expectedEditTexts)
         {
             // Arrange
-            var stringDiff = new StringDiff.StringDiff(new StringDiffOptions(new DefaultTokenBoundaryDetector()));
+            var stringDiff = new StringDiff.StringDiff(new StringDiffOptions(SimpleTokenBoundaryDetector.Instance));
 
             // Act
             var textDiff = stringDiff.ComputeDiff(source, target);

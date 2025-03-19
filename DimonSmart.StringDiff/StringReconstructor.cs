@@ -2,7 +2,6 @@
 
 namespace DimonSmart.StringDiff;
 
-
 public class StringReconstructor
 {
     public string Reconstruct(IReadOnlyCollection<TextEdit> edits, string source)

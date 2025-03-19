@@ -1,6 +1,6 @@
 ﻿namespace DimonSmart.StringDiff;
 
-public class GenericDiff<T> where T : notnull
+internal class GenericDiff<T> where T : notnull
 {
     private const int StackAllocThreshold = 256;
     public ITokenBoundaryDetector Tokenizer { get; }
