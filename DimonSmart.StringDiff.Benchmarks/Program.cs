@@ -54,7 +54,7 @@ public class StringDiffBenchmarks
         var random = new Random(42); // Fixed seed for reproducibility
         var wordsToChange = (int)(words.Length * changeRatio);
         
-        for (int i = 0; i < wordsToChange; i++)
+        for (var i = 0; i < wordsToChange; i++)
         {
             var idx = random.Next(words.Length);
             words[idx] = "CHANGED" + random.Next(100);

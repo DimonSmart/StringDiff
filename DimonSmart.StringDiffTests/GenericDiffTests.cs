@@ -6,18 +6,8 @@ namespace DimonSmart.StringDiffTests
 {
     public class GenericDiffTests
     {
-        // Tokenizer splits text into tokens using a regex that preserves words and non-word tokens.
         private class RegexTokenBoundaryDetector : ITokenBoundaryDetector
         {
-            public IEnumerable<string> Tokenize(string text)
-            {
-                var matches = Regex.Matches(text, @"\w+|\W+");
-                foreach (Match match in matches)
-                {
-                    yield return match.Value;
-                }
-            }
-
             public void TokenizeSpan(ReadOnlySpan<char> text, Span<Range> tokenRanges, out int tokenCount)
             {
                 // Convert to string since Regex doesn't work with Span<char>
@@ -37,10 +27,10 @@ namespace DimonSmart.StringDiffTests
 
         public static string Reconstruct(IReadOnlyCollection<GenericTextEdit<string>> edits, string source, ITokenBoundaryDetector tokenizer)
         {
-            var tokens = tokenizer.Tokenize(source).ToList();
+            var tokens = tokenizer.TokenizeToStrings(source).ToList();
             var resultTokens = new List<string>();
             var currentIndex = 0;
-            // Process edits in order of increasing start position.
+            
             foreach (var edit in edits.OrderBy(e => e.StartPosition))
             {
                 while (currentIndex < edit.StartPosition && currentIndex < tokens.Count)
@@ -70,16 +60,11 @@ namespace DimonSmart.StringDiffTests
         [InlineData("1234567890", "0987654321")]
         public void ComputeGenericDiff_ShouldRespectCharacterBoundaries(string source, string target)
         {
-            // Arrange
-            var tokenizer = new DefaultTokenBoundaryDetector();
-            var genericDiff = new GenericDiff<string>(tokenizer);
-          
-            // Act
-            var edits = genericDiff.ComputeDiff(source, target);
-            var reconstructedTarget = Reconstruct(edits, source, tokenizer);
-
-            // Assert
-            Assert.Equal(target, reconstructedTarget);
+            var tokenizer = new RegexTokenBoundaryDetector();
+            var differ = new GenericDiff<string>(tokenizer);
+            var edits = differ.ComputeDiff(source, target);
+            var reconstructed = Reconstruct(edits, source, tokenizer);
+            Assert.Equal(target, reconstructed);
         }
     }
 }

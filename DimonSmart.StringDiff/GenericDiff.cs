@@ -1,7 +1,8 @@
 ﻿namespace DimonSmart.StringDiff;
 
-public class GenericDiff<T>
+public class GenericDiff<T> where T : notnull
 {
+    private const int StackAllocThreshold = 256;
     public ITokenBoundaryDetector Tokenizer { get; }
     public IEqualityComparer<T> Comparer { get; }
     private ReadOnlyMemory<T> SourceTokensMemory { get; set; }
@@ -15,77 +16,81 @@ public class GenericDiff<T>
 
     public IReadOnlyCollection<GenericTextEdit<T>> ComputeDiff(string sourceText, string targetText)
     {
-        // Use stackalloc for small inputs
-        const int stackAllocThreshold = 256;
-        bool useStack = sourceText.Length <= stackAllocThreshold;
-
-        Span<Range> sourceRanges = useStack ? stackalloc Range[sourceText.Length] : new Range[sourceText.Length];
-        Span<Range> targetRanges = useStack ? stackalloc Range[targetText.Length] : new Range[targetText.Length];
-
-        Tokenizer.TokenizeSpan(sourceText.AsSpan(), sourceRanges, out int sourceTokenCount);
-        Tokenizer.TokenizeSpan(targetText.AsSpan(), targetRanges, out int targetTokenCount);
-
-        // Convert ranges to tokens only once
-        var sourceTokens = new T[sourceTokenCount];
-        var targetTokens = new T[targetTokenCount];
-        
         var sourceSpan = sourceText.AsSpan();
         var targetSpan = targetText.AsSpan();
-        
-        for (int i = 0; i < sourceTokenCount; i++)
+        // Use stackalloc for small inputs
+        var useStack = sourceSpan.Length <= StackAllocThreshold;
+
+        var sourceRanges = useStack ? stackalloc Range[sourceSpan.Length] : new Range[sourceSpan.Length];
+        var targetRanges = useStack ? stackalloc Range[targetSpan.Length] : new Range[targetSpan.Length];
+
+        Tokenizer.TokenizeSpan(sourceSpan, sourceRanges, out var sourceTokenCount);
+        Tokenizer.TokenizeSpan(targetSpan, targetRanges, out var targetTokenCount);
+
+        // Convert token ranges to T array
+        var sourceTokens = new T[sourceTokenCount];
+        var targetTokens = new T[targetTokenCount];
+
+        for (var i = 0; i < sourceTokenCount; i++)
         {
             sourceTokens[i] = (T)(object)sourceSpan[sourceRanges[i]].ToString();
         }
-        for (int i = 0; i < targetTokenCount; i++)
+        for (var i = 0; i < targetTokenCount; i++)
         {
             targetTokens[i] = (T)(object)targetSpan[targetRanges[i]].ToString();
         }
 
         SourceTokensMemory = sourceTokens;
-        var result = new List<GenericTextEdit<T>>();
-        DiffSpan(sourceTokens, targetTokens, 0, result);
-        return result;
+        var spanEdits = new List<GenericTextEditSpan<T>>();
+        DiffSpan(sourceTokens.AsMemory(), targetTokens.AsMemory(), 0, spanEdits);
+
+        if (!useStack)
+        {
+            sourceRanges = default;
+            targetRanges = default;
+        }
+
+        // Convert span edits to regular edits only at the end
+        return spanEdits.Select(e => e.ToGenericTextEdit()).ToList();
     }
 
     private void DiffSpan(
         ReadOnlyMemory<T> source,
         ReadOnlyMemory<T> target,
         int offset,
-        List<GenericTextEdit<T>> edits)
+        List<GenericTextEditSpan<T>> edits)
     {
-        var sourceSpan = source.Span;
-        var targetSpan = target.Span;
+        if (source.Length == 0 && target.Length == 0) return;
 
-        if (sourceSpan.IsEmpty && targetSpan.IsEmpty) return;
-
-        if (sourceSpan.IsEmpty)
+        if (source.Length == 0)
         {
-            edits.Add(new GenericTextEdit<T>(
+            edits.Add(new GenericTextEditSpan<T>(
                 offset,
-                Array.Empty<T>(),
-                target.ToArray(),
-                SourceTokensMemory.ToArray()));
+                ReadOnlyMemory<T>.Empty,
+                target,
+                SourceTokensMemory));
             return;
         }
 
-        if (targetSpan.IsEmpty)
+        if (target.Length == 0)
         {
-            edits.Add(new GenericTextEdit<T>(
+            edits.Add(new GenericTextEditSpan<T>(
                 offset,
-                source.ToArray(),
-                Array.Empty<T>(),
-                SourceTokensMemory.ToArray()));
+                source,
+                ReadOnlyMemory<T>.Empty,
+                SourceTokensMemory));
             return;
         }
 
-        var common = GetLongestCommonSubstring(sourceSpan, targetSpan);
+        var common = GetLongestCommonSubstring(source.Span, target.Span);
+
         if (common.Length == 0)
         {
-            edits.Add(new GenericTextEdit<T>(
+            edits.Add(new GenericTextEditSpan<T>(
                 offset,
-                source.ToArray(),
-                target.ToArray(),
-                SourceTokensMemory.ToArray()));
+                source,
+                target,
+                SourceTokensMemory));
             return;
         }
 
@@ -108,11 +113,8 @@ public class GenericDiff<T>
         ReadOnlySpan<T> source,
         ReadOnlySpan<T> target)
     {
-        const int stackAllocThreshold = 1024;
-        var totalSize = (source.Length + 1) * (target.Length + 1);
-        var useStack = totalSize <= stackAllocThreshold;
-
-        Span<int> matrixSpan = useStack ? stackalloc int[totalSize] : new int[totalSize];
+        using var matrixLease = MatrixPool.Rent(source.Length, target.Length);
+        var matrixSpan = matrixLease.Span;
 
         var maxLength = 0;
         var sourceEndIndex = 0;
@@ -136,11 +138,6 @@ public class GenericDiff<T>
                     }
                 }
             }
-        }
-
-        if (!useStack)
-        {
-            matrixSpan = default;
         }
 
         return new TokenSequenceMatcher.SubstringDescription(

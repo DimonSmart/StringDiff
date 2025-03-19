@@ -14,7 +14,7 @@ namespace DimonSmart.StringDiffTests
         [InlineData("abcde", new[] { "abcde" })]
         public void Tokenize_ShouldReturnCorrectTokens(string input, string[] expected)
         {
-            var tokens = DefaultTokenBoundaryDetector.Instance.Tokenize(input);
+            var tokens = DefaultTokenBoundaryDetector.Instance.TokenizeToStrings(input);
             Assert.Equal(expected, tokens);
         }
     }
