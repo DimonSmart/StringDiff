@@ -2,13 +2,6 @@ namespace DimonSmart.StringDiff;
 
 public class CharDiff : IStringDiff
 {
-    private ReadOnlyMemory<char> _sourceMemory;
-
-    public CharDiff()
-    {
-        _sourceMemory = ReadOnlyMemory<char>.Empty;
-    }
-
     public TextDiff ComputeDiff(string sourceText, string targetText)
     {
         var charEdits = ComputeCharacterDiff(sourceText, targetText);
@@ -16,35 +9,33 @@ public class CharDiff : IStringDiff
         return new TextDiff(sourceText, targetText, stringEdits);
     }
 
-    private IReadOnlyCollection<GenericTextEdit<char>> ComputeCharacterDiff(string sourceText, string targetText)
+    private static IReadOnlyCollection<GenericTextEdit<char>> ComputeCharacterDiff(string sourceText, string targetText)
     {
         var source = sourceText.AsMemory();
         var target = targetText.AsMemory();
-        _sourceMemory = source;
-
         var edits = new List<GenericTextEditSpan<char>>();
-        DiffSpans(source.Span, target.Span, 0, edits);
-
+        DiffSpans(source.Span, target.Span, 0, edits, source);
         return edits.Select(e => e.ToGenericTextEdit()).ToList();
     }
 
-    private void DiffSpans(
+    private static void DiffSpans(
         ReadOnlySpan<char> source,
         ReadOnlySpan<char> target,
         int offset,
-        List<GenericTextEditSpan<char>> edits)
+        List<GenericTextEditSpan<char>> edits,
+        ReadOnlyMemory<char> sourceMemory)
     {
         if (source.Length == 0 && target.Length == 0) return;
 
         if (source.Length == 0)
         {
-            edits.Add(new GenericTextEditSpan<char>(offset, ReadOnlyMemory<char>.Empty, target.ToArray(), _sourceMemory));
+            edits.Add(new GenericTextEditSpan<char>(offset, ReadOnlyMemory<char>.Empty, target.ToArray(), sourceMemory));
             return;
         }
 
         if (target.Length == 0)
         {
-            edits.Add(new GenericTextEditSpan<char>(offset, source.ToArray(), ReadOnlyMemory<char>.Empty, _sourceMemory));
+            edits.Add(new GenericTextEditSpan<char>(offset, source.ToArray(), ReadOnlyMemory<char>.Empty, sourceMemory));
             return;
         }
 
@@ -52,7 +43,7 @@ public class CharDiff : IStringDiff
 
         if (common.Length == 0)
         {
-            edits.Add(new GenericTextEditSpan<char>(offset, source.ToArray(), target.ToArray(), _sourceMemory));
+            edits.Add(new GenericTextEditSpan<char>(offset, source.ToArray(), target.ToArray(), sourceMemory));
             return;
         }
 
@@ -61,13 +52,15 @@ public class CharDiff : IStringDiff
             source[..common.SourceStartIndex],
             target[..common.TargetStartIndex],
             offset,
-            edits);
+            edits,
+            sourceMemory);
 
         // Process the part after the common substring
         DiffSpans(
             source[(common.SourceStartIndex + common.Length)..],
             target[(common.TargetStartIndex + common.Length)..],
             offset + common.SourceStartIndex + common.Length,
-            edits);
+            edits,
+            sourceMemory);
     }
 }
