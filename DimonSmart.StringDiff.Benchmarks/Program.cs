@@ -10,6 +10,7 @@ public class StringDiffBenchmarks
     private readonly string _loremIpsum1KBWith10PercentChanges;
     private readonly string _completelyDifferentText1KB;
     private readonly StringDiff _stringDiff;
+    private readonly StringDiff _stringDiffWithTokenizer;
 
     public StringDiffBenchmarks()
     {
@@ -17,24 +18,43 @@ public class StringDiffBenchmarks
         _loremIpsum1KBWith10PercentChanges = GenerateModifiedText(_loremIpsum1KB, 0.1);
         _completelyDifferentText1KB = GenerateCompletelyDifferentText(1024);
         _stringDiff = new StringDiff();
+        _stringDiffWithTokenizer = new StringDiff(new StringDiffOptions(SimpleTokenBoundaryDetector.Instance));
     }
 
-    [Benchmark(Description = "Identical 1KB text")]
+    [Benchmark(Description = "Identical 1KB text - Character level")]
     public TextDiff BenchmarkIdenticalText()
     {
         return _stringDiff.ComputeDiff(_loremIpsum1KB, _loremIpsum1KB);
     }
 
-    [Benchmark(Description = "10% modified 1KB text")]
+    [Benchmark(Description = "Identical 1KB text - Word level")]
+    public TextDiff BenchmarkIdenticalTextWordLevel()
+    {
+        return _stringDiffWithTokenizer.ComputeDiff(_loremIpsum1KB, _loremIpsum1KB);
+    }
+
+    [Benchmark(Description = "10% modified 1KB text - Character level")]
     public TextDiff BenchmarkModifiedText()
     {
         return _stringDiff.ComputeDiff(_loremIpsum1KB, _loremIpsum1KBWith10PercentChanges);
     }
 
-    [Benchmark(Description = "Completely different 1KB text")]
+    [Benchmark(Description = "10% modified 1KB text - Word level")]
+    public TextDiff BenchmarkModifiedTextWordLevel()
+    {
+        return _stringDiffWithTokenizer.ComputeDiff(_loremIpsum1KB, _loremIpsum1KBWith10PercentChanges);
+    }
+
+    [Benchmark(Description = "Completely different 1KB text - Character level")]
     public TextDiff BenchmarkDifferentText()
     {
         return _stringDiff.ComputeDiff(_loremIpsum1KB, _completelyDifferentText1KB);
+    }
+
+    [Benchmark(Description = "Completely different 1KB text - Word level")]
+    public TextDiff BenchmarkDifferentTextWordLevel()
+    {
+        return _stringDiffWithTokenizer.ComputeDiff(_loremIpsum1KB, _completelyDifferentText1KB);
     }
 
     private static string GenerateLoremIpsum(int targetSize)

@@ -6,24 +6,35 @@ public static class TokenSequenceMatcher
 {
     public record struct SubstringDescription(int SourceStartIndex, int TargetStartIndex, int Length);
 
+    private static int[]? _sharedMatrix;
+
     public static SubstringDescription GetLongestCommonSubstring(ReadOnlySpan<char> source, ReadOnlySpan<char> target, StringDiffOptions? options)
     {
+        var requiredSize = (source.Length + 1) * (target.Length + 1);
+        if (_sharedMatrix == null || _sharedMatrix.Length < requiredSize)
+        {
+            _sharedMatrix = new int[requiredSize];
+        }
+
+        // Clear the existing matrix
+        _sharedMatrix.AsSpan(0, requiredSize).Clear();
+        
         if (options?.TokenBoundaryDetector == null)
         {
-            return FindCommonSpan(source, target);
+            return FindCommonSpanWithMatrix(source, target, _sharedMatrix);
         }
 
         // Use stackalloc for small inputs to avoid heap allocations
         const int stackAllocThreshold = 256;
         var useStack = source.Length <= stackAllocThreshold;
         
-        Span<Range> sourceRanges = useStack ? stackalloc Range[source.Length] : new Range[source.Length];
-        Span<Range> targetRanges = useStack ? stackalloc Range[target.Length] : new Range[target.Length];
+        var sourceRanges = useStack ? stackalloc Range[source.Length] : new Range[source.Length];
+        var targetRanges = useStack ? stackalloc Range[target.Length] : new Range[target.Length];
 
         options.TokenBoundaryDetector.TokenizeSpan(source, sourceRanges, out var sourceTokenCount);
         options.TokenBoundaryDetector.TokenizeSpan(target, targetRanges, out var targetTokenCount);
 
-        var result = FindCommonRanges(source, target, sourceRanges[..sourceTokenCount], targetRanges[..targetTokenCount]);
+        var result = FindCommonRangesWithMatrix(source, target, sourceRanges[..sourceTokenCount], targetRanges[..targetTokenCount], _sharedMatrix);
         
         if (!useStack)
         {
@@ -35,15 +46,8 @@ public static class TokenSequenceMatcher
         return result;
     }
 
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    private static SubstringDescription FindCommonSpan(ReadOnlySpan<char> source, ReadOnlySpan<char> target)
+    private static SubstringDescription FindCommonSpanWithMatrix(ReadOnlySpan<char> source, ReadOnlySpan<char> target, Span<int> matrixSpan)
     {
-        const int stackAllocThreshold = 1024;
-        var totalSize = (source.Length + 1) * (target.Length + 1);
-        var useStack = totalSize <= stackAllocThreshold;
-        
-        Span<int> matrixSpan = useStack ? stackalloc int[totalSize] : new int[totalSize];
-        
         var maxLength = 0;
         var sourceEndIndex = 0;
         var targetEndIndex = 0;
@@ -68,29 +72,19 @@ public static class TokenSequenceMatcher
             }
         }
 
-        if (!useStack)
-        {
-            matrixSpan = default;
-        }
-
         return new SubstringDescription(
             sourceEndIndex - maxLength,
             targetEndIndex - maxLength,
             maxLength);
     }
 
-    private static SubstringDescription FindCommonRanges(
+    private static SubstringDescription FindCommonRangesWithMatrix(
         ReadOnlySpan<char> sourceText,
         ReadOnlySpan<char> targetText,
         ReadOnlySpan<Range> sourceRanges,
-        ReadOnlySpan<Range> targetRanges)
+        ReadOnlySpan<Range> targetRanges,
+        Span<int> matrixSpan)
     {
-        const int stackAllocThreshold = 1024;
-        var totalSize = (sourceRanges.Length + 1) * (targetRanges.Length + 1);
-        var useStack = totalSize <= stackAllocThreshold;
-        
-        Span<int> matrixSpan = useStack ? stackalloc int[totalSize] : new int[totalSize];
-        
         var maxLength = 0;
         var sourceEndIndex = 0;
         var targetEndIndex = 0;
@@ -121,29 +115,27 @@ public static class TokenSequenceMatcher
             }
         }
 
-        if (!useStack)
-        {
-            matrixSpan = default;
-        }
-
         // Convert token indices to character positions
         var sourceStart = 0;
         for (var i = 0; i < sourceEndIndex - maxLength; i++)
         {
-            sourceStart += sourceText[sourceRanges[i]].Length;
+            var range = sourceRanges[i];
+            sourceStart = range.End.Value;
         }
 
         var targetStart = 0;
         for (var i = 0; i < targetEndIndex - maxLength; i++)
         {
-            targetStart += targetText[targetRanges[i]].Length;
+            var range = targetRanges[i];
+            targetStart = range.End.Value;
         }
 
         // Calculate total length of matched tokens
         var length = 0;
         for (var i = sourceEndIndex - maxLength; i < sourceEndIndex; i++)
         {
-            length += sourceText[sourceRanges[i]].Length;
+            var range = sourceRanges[i];
+            length += range.End.Value - range.Start.Value;
         }
 
         return new SubstringDescription(sourceStart, targetStart, length);

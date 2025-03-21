@@ -18,6 +18,7 @@ internal class GenericDiff<T> where T : notnull
     {
         var sourceSpan = sourceText.AsSpan();
         var targetSpan = targetText.AsSpan();
+        
         // Use stackalloc for small inputs
         var useStack = sourceSpan.Length <= StackAllocThreshold;
 
@@ -82,6 +83,20 @@ internal class GenericDiff<T> where T : notnull
             return;
         }
 
+        // For completely different strings, check if we should treat them as a single edit
+        if (source.Length == 1 && target.Length == 1)
+        {
+            if (!Comparer.Equals(source.Span[0], target.Span[0]))
+            {
+                edits.Add(new GenericTextEditSpan<T>(
+                    offset,
+                    source,
+                    target,
+                    SourceTokensMemory));
+                return;
+            }
+        }
+
         var common = GetLongestCommonSubstring(source.Span, target.Span);
 
         if (common.Length == 0)
@@ -113,36 +128,72 @@ internal class GenericDiff<T> where T : notnull
         ReadOnlySpan<T> source,
         ReadOnlySpan<T> target)
     {
-        using var matrixLease = MatrixPool.Rent(source.Length, target.Length);
-        var matrixSpan = matrixLease.Span;
-
         var maxLength = 0;
-        var sourceEndIndex = 0;
-        var targetEndIndex = 0;
+        var sourceStart = 0;
+        var targetStart = 0;
 
-        for (var i = 1; i <= source.Length; i++)
+        // Convert tokens to strings for proper comparison
+        var sourceTokens = source.ToArray();
+        var targetTokens = target.ToArray();
+
+        // For each possible starting position in source
+        for (var i = 0; i < source.Length; i++)
         {
-            for (var j = 1; j <= target.Length; j++)
+            // For each possible starting position in target
+            for (var j = 0; j < target.Length; j++)
             {
-                if (Comparer.Equals(source[i - 1], target[j - 1]))
+                // Try to find the longest common sequence starting at these positions
+                var length = 0;
+                while (i + length < source.Length && 
+                       j + length < target.Length &&
+                       Comparer.Equals(sourceTokens[i + length], targetTokens[j + length]))
                 {
-                    var idx = i * (target.Length + 1) + j;
-                    var prevIdx = (i - 1) * (target.Length + 1) + (j - 1);
-                    matrixSpan[idx] = matrixSpan[prevIdx] + 1;
+                    length++;
+                }
 
-                    if (matrixSpan[idx] > maxLength)
-                    {
-                        maxLength = matrixSpan[idx];
-                        sourceEndIndex = i;
-                        targetEndIndex = j;
-                    }
+                // Update if we found a longer sequence
+                if (length > maxLength)
+                {
+                    maxLength = length;
+                    sourceStart = i;
+                    targetStart = j;
                 }
             }
         }
 
-        return new TokenSequenceMatcher.SubstringDescription(
-            sourceEndIndex - maxLength,
-            targetEndIndex - maxLength,
-            maxLength);
+        return new TokenSequenceMatcher.SubstringDescription(sourceStart, targetStart, maxLength);
+    }
+
+    private class TokenCompareDetector : ITokenBoundaryDetector
+    {
+        private readonly T[] _source;
+        private readonly T[] _target;
+        private readonly IEqualityComparer<T> _comparer;
+
+        public TokenCompareDetector(T[] source, T[] target, IEqualityComparer<T> comparer)
+        {
+            _source = source;
+            _target = target;
+            _comparer = comparer;
+        }
+
+        public void TokenizeSpan(ReadOnlySpan<char> text, Span<Range> tokenRanges, out int tokenCount)
+        {
+            // Each position is a token by itself
+            tokenCount = text.Length;
+            for (var i = 0; i < tokenCount && i < tokenRanges.Length; i++)
+            {
+                tokenRanges[i] = new Range(i, i + 1);
+            }
+        }
+
+        public bool TokensEqual(ReadOnlySpan<char> source, ReadOnlySpan<char> target)
+        {
+            if (source.Length != 1 || target.Length != 1) return false;
+            var sourceIndex = source[0];
+            var targetIndex = target[0];
+            return sourceIndex < _source.Length && targetIndex < _target.Length && 
+                   _comparer.Equals(_source[sourceIndex], _target[targetIndex]);
+        }
     }
 }
