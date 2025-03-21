@@ -199,6 +199,66 @@ The `MarkdownStringReconstructor` class extends the `StringReconstructor` class 
 - `protected override string FormatDeletedText(string text)`: Formats the deleted text using Markdown strikethrough syntax (`~~text~~`).
 - `protected override string FormatModifiedText(string oldText, string newText)`: Formats the modified text using both Markdown strikethrough and bold syntax (`~~oldText~~**newText**`).
 
+## Tokenizers
+
+The library provides several specialized tokenizers that can be used to customize how text is split for comparison:
+
+### SimpleTokenBoundaryDetector
+
+The default tokenizer that splits text into words and non-word tokens. It uses `char.IsLetterOrDigit` to determine word boundaries.
+
+```csharp
+var detector = SimpleTokenBoundaryDetector.Instance;
+```
+
+### EmailTokenBoundaryDetector
+
+Specialized tokenizer that recognizes email addresses as single tokens.
+
+```csharp
+var detector = new EmailTokenBoundaryDetector();
+// Example: "Contact me at user@example.com" 
+// Tokens: ["Contact", " ", "me", " ", "at", " ", "user@example.com"]
+```
+
+### PhoneTokenBoundaryDetector
+
+Specialized tokenizer that recognizes phone numbers as single tokens. Supports various phone number formats:
+- International format with '+' prefix
+- Numbers with spaces or hyphens
+- Minimum 8 digits required
+
+```csharp
+var detector = new PhoneTokenBoundaryDetector();
+// Example: "Call +1-234-567-8900" 
+// Tokens: ["Call", " ", "+1-234-567-8900"]
+```
+
+### CompositeTokenBoundaryDetector
+
+Combines multiple tokenizers with priority ordering. When token ranges overlap, the first detector's tokens take precedence.
+
+```csharp
+var composite = new CompositeTokenBoundaryDetector(
+    new ITokenBoundaryDetector[]
+    {
+        new EmailTokenBoundaryDetector(),
+        new PhoneTokenBoundaryDetector()
+    }
+);
+```
+
+### Custom Tokenizers
+
+You can implement custom tokenizers by implementing the `ITokenBoundaryDetector` interface:
+
+```csharp
+public interface ITokenBoundaryDetector
+{
+    void TokenizeSpan(ReadOnlySpan<char> text, Span<Range> tokenRanges, out int tokenCount);
+}
+```
+
 ## Contributing
 
 Contributions are welcome! Please feel free to submit a pull request or open an issue on GitHub.
