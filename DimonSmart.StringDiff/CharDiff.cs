@@ -1,17 +1,22 @@
 namespace DimonSmart.StringDiff;
 
-internal class CharDiff
+public class CharDiff : IStringDiff
 {
-    public ITokenBoundaryDetector Tokenizer { get; }
     private ReadOnlyMemory<char> _sourceMemory;
 
-    public CharDiff(ITokenBoundaryDetector tokenizer)
+    public CharDiff()
     {
-        Tokenizer = tokenizer;
         _sourceMemory = ReadOnlyMemory<char>.Empty;
     }
 
-    public IReadOnlyCollection<GenericTextEdit<char>> ComputeDiff(string sourceText, string targetText)
+    public TextDiff ComputeDiff(string sourceText, string targetText)
+    {
+        var charEdits = ComputeCharacterDiff(sourceText, targetText);
+        var stringEdits = charEdits.Select(e => e.ToStringEdit()).ToList();
+        return new TextDiff(sourceText, targetText, stringEdits);
+    }
+
+    private IReadOnlyCollection<GenericTextEdit<char>> ComputeCharacterDiff(string sourceText, string targetText)
     {
         var source = sourceText.AsMemory();
         var target = targetText.AsMemory();
