@@ -20,12 +20,12 @@ namespace DimonSmart.StringDiffTests
         }
 
         [Theory]
-        [InlineData("")] // Empty string
-        [InlineData("Hello world")] // No numbers
-        [InlineData("123")] // Too short
-        [InlineData("+7")] // Too short with plus
-        [InlineData("+7 123")] // Too short phone
-        [InlineData("1234567")] // Just digits, no phone format
+        [InlineData("")]
+        [InlineData("Hello world")]
+        [InlineData("123")]
+        [InlineData("+7")]
+        [InlineData("+7 123")]
+        [InlineData("1234567")]
         public void TokenizeSpan_ShouldNotDetectNonPhoneNumbers(string input)
         {
             var detector = new PhoneTokenBoundaryDetector();
