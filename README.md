@@ -230,8 +230,8 @@ Specialized tokenizer that recognizes phone numbers as single tokens. Supports v
 
 ```csharp
 var detector = new PhoneTokenBoundaryDetector();
-// Example: "Call +1-234-567-8900" 
-// Tokens: ["Call", " ", "+1-234-567-8900"]
+// Example: "Call +1-555-567-8900" 
+// Tokens: ["Call", " ", "+1-555-567-8900"]
 ```
 
 ### CompositeTokenBoundaryDetector
