@@ -15,13 +15,13 @@ public static class TokenSequenceMatcher
 
         // Use stackalloc for small inputs to avoid heap allocations
         const int stackAllocThreshold = 256;
-        bool useStack = source.Length <= stackAllocThreshold;
+        var useStack = source.Length <= stackAllocThreshold;
         
         Span<Range> sourceRanges = useStack ? stackalloc Range[source.Length] : new Range[source.Length];
         Span<Range> targetRanges = useStack ? stackalloc Range[target.Length] : new Range[target.Length];
 
-        options.TokenBoundaryDetector.TokenizeSpan(source, sourceRanges, out int sourceTokenCount);
-        options.TokenBoundaryDetector.TokenizeSpan(target, targetRanges, out int targetTokenCount);
+        options.TokenBoundaryDetector.TokenizeSpan(source, sourceRanges, out var sourceTokenCount);
+        options.TokenBoundaryDetector.TokenizeSpan(target, targetRanges, out var targetTokenCount);
 
         var result = FindCommonRanges(source, target, sourceRanges[..sourceTokenCount], targetRanges[..targetTokenCount]);
         
@@ -127,21 +127,21 @@ public static class TokenSequenceMatcher
         }
 
         // Convert token indices to character positions
-        int sourceStart = 0;
-        for (int i = 0; i < sourceEndIndex - maxLength; i++)
+        var sourceStart = 0;
+        for (var i = 0; i < sourceEndIndex - maxLength; i++)
         {
             sourceStart += sourceText[sourceRanges[i]].Length;
         }
 
-        int targetStart = 0;
-        for (int i = 0; i < targetEndIndex - maxLength; i++)
+        var targetStart = 0;
+        for (var i = 0; i < targetEndIndex - maxLength; i++)
         {
             targetStart += targetText[targetRanges[i]].Length;
         }
 
         // Calculate total length of matched tokens
-        int length = 0;
-        for (int i = sourceEndIndex - maxLength; i < sourceEndIndex; i++)
+        var length = 0;
+        for (var i = sourceEndIndex - maxLength; i < sourceEndIndex; i++)
         {
             length += sourceText[sourceRanges[i]].Length;
         }
