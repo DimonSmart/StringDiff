@@ -1,36 +1,26 @@
-using System;
-using System.Collections.Generic;
-
 namespace DimonSmart.StringDiff;
 
 internal class CharDiff
 {
-    private const int StackAllocThreshold = 256;
     public ITokenBoundaryDetector Tokenizer { get; }
-    private string SourceText { get; set; }
-    private string TargetText { get; set; }
     private ReadOnlyMemory<char> SourceMemory { get; set; }
 
     public CharDiff(ITokenBoundaryDetector tokenizer)
     {
         Tokenizer = tokenizer;
-        SourceText = string.Empty;
-        TargetText = string.Empty;
         SourceMemory = ReadOnlyMemory<char>.Empty;
     }
 
     public IReadOnlyCollection<GenericTextEdit<char>> ComputeDiff(string sourceText, string targetText)
     {
-        SourceText = sourceText;
-        TargetText = targetText;
         var sourceSpan = sourceText.AsSpan();
         var targetSpan = targetText.AsSpan();
         SourceMemory = sourceText.AsMemory();
-        
+
         var spanEdits = new List<GenericTextEditSpan<char>>();
         DiffSpan(sourceSpan, targetSpan, 0, spanEdits);
 
-        return spanEdits.Select(edit => 
+        return spanEdits.Select(edit =>
         {
             var deletedChars = edit.DeletedTokens.ToArray();
             var insertedChars = edit.InsertedTokens.ToArray();
