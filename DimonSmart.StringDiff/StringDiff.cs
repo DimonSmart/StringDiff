@@ -6,10 +6,22 @@ public class StringDiff(StringDiffOptions? options = null) : IStringDiff
 
     public TextDiff ComputeDiff(string sourceText, string targetText)
     {
-        var genericDiff = new GenericDiff<string>(Options?.TokenBoundaryDetector ?? new CharacterTokenBoundaryDetector(), null);
-        var genericEdits = genericDiff.ComputeDiff(sourceText, targetText);
-        var result = genericEdits.Select(e => e.ToStringEdit()).ToList();
-        return new TextDiff(sourceText, targetText, result);
+        if (Options?.TokenBoundaryDetector is SimpleTokenBoundaryDetector)
+        {
+            // Use word-level diffing for SimpleTokenBoundaryDetector
+            var wordDiff = new WordDiff(Options.TokenBoundaryDetector);
+            var wordEdits = wordDiff.ComputeDiff(sourceText, targetText);
+            var result = wordEdits.Select(e => e.ToStringEdit()).ToList();
+            return new TextDiff(sourceText, targetText, result);
+        }
+        else
+        {
+            // Use character-level diffing for other cases
+            var charDiff = new CharDiff(Options?.TokenBoundaryDetector ?? new CharacterTokenBoundaryDetector());
+            var charEdits = charDiff.ComputeDiff(sourceText, targetText);
+            var result = charEdits.Select(e => e.ToStringEdit()).ToList();
+            return new TextDiff(sourceText, targetText, result);
+        }
     }
 
     private class CharacterTokenBoundaryDetector : ITokenBoundaryDetector

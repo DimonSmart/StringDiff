@@ -38,7 +38,6 @@ public static class TokenSequenceMatcher
         
         if (!useStack)
         {
-            // Help GC by clearing references we no longer need
             sourceRanges = default;
             targetRanges = default;
         }
@@ -49,33 +48,35 @@ public static class TokenSequenceMatcher
     private static SubstringDescription FindCommonSpanWithMatrix(ReadOnlySpan<char> source, ReadOnlySpan<char> target, Span<int> matrixSpan)
     {
         var maxLength = 0;
-        var sourceEndIndex = 0;
-        var targetEndIndex = 0;
+        var sourceStart = 0;
+        var targetStart = 0;
 
+        // Convert spans to row-major matrix form
+        var rows = source.Length + 1;
+        var cols = target.Length + 1;
+        
+        // Fill the matrix
         for (var i = 1; i <= source.Length; i++)
         {
             for (var j = 1; j <= target.Length; j++)
             {
                 if (source[i - 1] == target[j - 1])
                 {
-                    var idx = i * (target.Length + 1) + j;
-                    var prevIdx = (i - 1) * (target.Length + 1) + (j - 1);
+                    var idx = i * cols + j;
+                    var prevIdx = (i - 1) * cols + (j - 1);
                     matrixSpan[idx] = matrixSpan[prevIdx] + 1;
 
                     if (matrixSpan[idx] > maxLength)
                     {
                         maxLength = matrixSpan[idx];
-                        sourceEndIndex = i;
-                        targetEndIndex = j;
+                        sourceStart = i - maxLength;
+                        targetStart = j - maxLength;
                     }
                 }
             }
         }
 
-        return new SubstringDescription(
-            sourceEndIndex - maxLength,
-            targetEndIndex - maxLength,
-            maxLength);
+        return new SubstringDescription(sourceStart, targetStart, maxLength);
     }
 
     private static SubstringDescription FindCommonRangesWithMatrix(
@@ -86,58 +87,50 @@ public static class TokenSequenceMatcher
         Span<int> matrixSpan)
     {
         var maxLength = 0;
-        var sourceEndIndex = 0;
-        var targetEndIndex = 0;
+        var sourceStart = 0;
+        var targetStart = 0;
 
+        // Convert ranges to row-major matrix form
+        var rows = sourceRanges.Length + 1;
+        var cols = targetRanges.Length + 1;
+
+        // Fill the matrix
         for (var i = 1; i <= sourceRanges.Length; i++)
         {
             var sourceRange = sourceRanges[i - 1];
-            var sourceSpan = sourceText[sourceRange];
-            
+            var sourceSlice = sourceText[sourceRange];
+
             for (var j = 1; j <= targetRanges.Length; j++)
             {
                 var targetRange = targetRanges[j - 1];
-                var targetSpan = targetText[targetRange];
-                
-                if (sourceSpan.SequenceEqual(targetSpan))
+                var targetSlice = targetText[targetRange];
+
+                if (sourceSlice.SequenceEqual(targetSlice))
                 {
-                    var idx = i * (targetRanges.Length + 1) + j;
-                    var prevIdx = (i - 1) * (targetRanges.Length + 1) + (j - 1);
+                    var idx = i * cols + j;
+                    var prevIdx = (i - 1) * cols + (j - 1);
                     matrixSpan[idx] = matrixSpan[prevIdx] + 1;
 
                     if (matrixSpan[idx] > maxLength)
                     {
                         maxLength = matrixSpan[idx];
-                        sourceEndIndex = i;
-                        targetEndIndex = j;
+                        sourceStart = i - maxLength;
+                        targetStart = j - maxLength;
                     }
                 }
             }
         }
 
-        // Convert token indices to character positions
-        var sourceStart = 0;
-        for (var i = 0; i < sourceEndIndex - maxLength; i++)
+        // Convert token indices back to character indices
+        if (maxLength > 0)
         {
-            var range = sourceRanges[i];
-            sourceStart = range.End.Value;
+            var actualSourceStart = sourceRanges[sourceStart].Start.Value;
+            var actualTargetStart = targetRanges[targetStart].Start.Value;
+            var lastSourceToken = sourceRanges[sourceStart + maxLength - 1];
+            var actualLength = lastSourceToken.End.Value - actualSourceStart;
+            return new SubstringDescription(actualSourceStart, actualTargetStart, actualLength);
         }
 
-        var targetStart = 0;
-        for (var i = 0; i < targetEndIndex - maxLength; i++)
-        {
-            var range = targetRanges[i];
-            targetStart = range.End.Value;
-        }
-
-        // Calculate total length of matched tokens
-        var length = 0;
-        for (var i = sourceEndIndex - maxLength; i < sourceEndIndex; i++)
-        {
-            var range = sourceRanges[i];
-            length += range.End.Value - range.Start.Value;
-        }
-
-        return new SubstringDescription(sourceStart, targetStart, length);
+        return new SubstringDescription(0, 0, 0);
     }
 }
