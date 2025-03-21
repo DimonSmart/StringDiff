@@ -7,55 +7,46 @@ internal class WordDiff
 {
     private const int StackAllocThreshold = 256;
     public ITokenBoundaryDetector Tokenizer { get; }
-    private ReadOnlyMemory<string> SourceTokensMemory { get; set; }
+    private ReadOnlyMemory<string> _sourceTokensMemory;
 
     public WordDiff(ITokenBoundaryDetector tokenizer)
     {
         Tokenizer = tokenizer;
-        SourceTokensMemory = Array.Empty<string>();
+        _sourceTokensMemory = ReadOnlyMemory<string>.Empty;
     }
 
     public IReadOnlyCollection<GenericTextEdit<string>> ComputeDiff(string sourceText, string targetText)
     {
-        var sourceSpan = sourceText.AsSpan();
-        var targetSpan = targetText.AsSpan();
-        
-        // Use stackalloc for small inputs
-        var useStack = sourceSpan.Length <= StackAllocThreshold;
+        // Use stackalloc for small inputs to avoid heap allocations
+        var useStack = sourceText.Length <= StackAllocThreshold && targetText.Length <= StackAllocThreshold;
+        Span<Range> sourceRanges = useStack ? stackalloc Range[sourceText.Length] : new Range[sourceText.Length];
+        Span<Range> targetRanges = useStack ? stackalloc Range[targetText.Length] : new Range[targetText.Length];
 
-        var sourceRanges = useStack ? stackalloc Range[sourceSpan.Length] : new Range[sourceSpan.Length];
-        var targetRanges = useStack ? stackalloc Range[targetSpan.Length] : new Range[targetSpan.Length];
+        Tokenizer.TokenizeSpan(sourceText.AsSpan(), sourceRanges, out var sourceTokenCount);
+        Tokenizer.TokenizeSpan(targetText.AsSpan(), targetRanges, out var targetTokenCount);
 
-        Tokenizer.TokenizeSpan(sourceSpan, sourceRanges, out var sourceTokenCount);
-        Tokenizer.TokenizeSpan(targetSpan, targetRanges, out var targetTokenCount);
+        var sourceTokens = ExtractTokens(sourceText, sourceRanges[..sourceTokenCount]);
+        var targetTokens = ExtractTokens(targetText, targetRanges[..targetTokenCount]);
 
-        // Convert token ranges to string array - now type safe
-        var sourceTokens = new string[sourceTokenCount];
-        var targetTokens = new string[targetTokenCount];
+        _sourceTokensMemory = sourceTokens;
 
-        for (var i = 0; i < sourceTokenCount; i++)
-        {
-            sourceTokens[i] = sourceSpan[sourceRanges[i]].ToString();
-        }
-        for (var i = 0; i < targetTokenCount; i++)
-        {
-            targetTokens[i] = targetSpan[targetRanges[i]].ToString();
-        }
+        var edits = new List<GenericTextEditSpan<string>>();
+        DiffSpans(sourceTokens, targetTokens, 0, edits);
 
-        SourceTokensMemory = sourceTokens;
-        var spanEdits = new List<GenericTextEditSpan<string>>();
-        DiffSpan(sourceTokens.AsMemory(), targetTokens.AsMemory(), 0, spanEdits);
-
-        if (!useStack)
-        {
-            sourceRanges = default;
-            targetRanges = default;
-        }
-
-        return spanEdits.Select(e => e.ToGenericTextEdit()).ToList();
+        return edits.Select(e => e.ToGenericTextEdit()).ToList();
     }
 
-    private void DiffSpan(
+    private static ReadOnlyMemory<string> ExtractTokens(string text, ReadOnlySpan<Range> ranges)
+    {
+        var tokens = new string[ranges.Length];
+        for (var i = 0; i < ranges.Length; i++)
+        {
+            tokens[i] = text[ranges[i]];
+        }
+        return tokens;
+    }
+
+    private void DiffSpans(
         ReadOnlyMemory<string> source,
         ReadOnlyMemory<string> target,
         int offset,
@@ -65,21 +56,13 @@ internal class WordDiff
 
         if (source.Length == 0)
         {
-            edits.Add(new GenericTextEditSpan<string>(
-                offset,
-                ReadOnlyMemory<string>.Empty,
-                target,
-                SourceTokensMemory));
+            edits.Add(new GenericTextEditSpan<string>(offset, ReadOnlyMemory<string>.Empty, target, _sourceTokensMemory));
             return;
         }
 
         if (target.Length == 0)
         {
-            edits.Add(new GenericTextEditSpan<string>(
-                offset,
-                source,
-                ReadOnlyMemory<string>.Empty,
-                SourceTokensMemory));
+            edits.Add(new GenericTextEditSpan<string>(offset, source, ReadOnlyMemory<string>.Empty, _sourceTokensMemory));
             return;
         }
 
@@ -87,23 +70,19 @@ internal class WordDiff
 
         if (common.Length == 0)
         {
-            edits.Add(new GenericTextEditSpan<string>(
-                offset,
-                source,
-                target,
-                SourceTokensMemory));
+            edits.Add(new GenericTextEditSpan<string>(offset, source, target, _sourceTokensMemory));
             return;
         }
 
         // Process the part before the common substring
-        DiffSpan(
+        DiffSpans(
             source[..common.SourceStartIndex],
             target[..common.TargetStartIndex],
             offset,
             edits);
 
         // Process the part after the common substring
-        DiffSpan(
+        DiffSpans(
             source[(common.SourceStartIndex + common.Length)..],
             target[(common.TargetStartIndex + common.Length)..],
             offset + common.SourceStartIndex + common.Length,

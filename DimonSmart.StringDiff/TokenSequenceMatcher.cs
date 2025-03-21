@@ -38,6 +38,7 @@ public static class TokenSequenceMatcher
         
         if (!useStack)
         {
+            // Help the GC by clearing references we no longer need
             sourceRanges = default;
             targetRanges = default;
         }
@@ -45,17 +46,16 @@ public static class TokenSequenceMatcher
         return result;
     }
 
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     private static SubstringDescription FindCommonSpanWithMatrix(ReadOnlySpan<char> source, ReadOnlySpan<char> target, Span<int> matrixSpan)
     {
         var maxLength = 0;
         var sourceStart = 0;
         var targetStart = 0;
 
-        // Convert spans to row-major matrix form
         var rows = source.Length + 1;
         var cols = target.Length + 1;
         
-        // Fill the matrix
         for (var i = 1; i <= source.Length; i++)
         {
             for (var j = 1; j <= target.Length; j++)
@@ -90,11 +90,9 @@ public static class TokenSequenceMatcher
         var sourceStart = 0;
         var targetStart = 0;
 
-        // Convert ranges to row-major matrix form
         var rows = sourceRanges.Length + 1;
         var cols = targetRanges.Length + 1;
 
-        // Fill the matrix
         for (var i = 1; i <= sourceRanges.Length; i++)
         {
             var sourceRange = sourceRanges[i - 1];
@@ -121,7 +119,6 @@ public static class TokenSequenceMatcher
             }
         }
 
-        // Convert token indices back to character indices
         if (maxLength > 0)
         {
             var actualSourceStart = sourceRanges[sourceStart].Start.Value;

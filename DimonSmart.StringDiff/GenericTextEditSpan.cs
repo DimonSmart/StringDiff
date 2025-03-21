@@ -15,12 +15,6 @@ internal readonly struct GenericTextEditSpan<T>
         SourceTokens = sourceTokens;
     }
 
-    public GenericTextEdit<T> ToGenericTextEdit()
-    {
-        return new GenericTextEdit<T>(
-            StartPosition,
-            DeletedTokens.ToArray(),
-            InsertedTokens.ToArray(),
-            SourceTokens.ToArray());
-    }
+    public GenericTextEdit<T> ToGenericTextEdit() => 
+        new(StartPosition, DeletedTokens, InsertedTokens, SourceTokens);
 }
