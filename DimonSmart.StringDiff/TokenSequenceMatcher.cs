@@ -8,7 +8,7 @@ public static class TokenSequenceMatcher
 
     private static int[]? _sharedMatrix;
 
-    public static SubstringDescription GetLongestCommonSubstring(ReadOnlySpan<char> source, ReadOnlySpan<char> target, StringDiffOptions? options)
+    public static SubstringDescription GetLongestCommonSubstring(ReadOnlySpan<char> source, ReadOnlySpan<char> target)
     {
         var requiredSize = (source.Length + 1) * (target.Length + 1);
         if (_sharedMatrix == null || _sharedMatrix.Length < requiredSize)
@@ -16,33 +16,8 @@ public static class TokenSequenceMatcher
             _sharedMatrix = new int[requiredSize];
         }
 
-        // Clear the existing matrix
         _sharedMatrix.AsSpan(0, requiredSize).Clear();
-        
-        if (options?.Tokenizer == null)
-        {
-            return FindCommonSpanWithMatrix(source, target, _sharedMatrix);
-        }
-
-        // Use stackalloc for small inputs to avoid heap allocations
-        const int stackAllocThreshold = 256;
-        var useStack = source.Length <= stackAllocThreshold;
-        
-        var sourceRanges = useStack ? stackalloc Range[source.Length] : new Range[source.Length];
-        var targetRanges = useStack ? stackalloc Range[target.Length] : new Range[target.Length];
-
-        options.Tokenizer.TokenizeSpan(source, sourceRanges, out var sourceTokenCount);
-        options.Tokenizer.TokenizeSpan(target, targetRanges, out var targetTokenCount);
-
-        var result = FindCommonRangesWithMatrix(source, target, sourceRanges[..sourceTokenCount], targetRanges[..targetTokenCount], _sharedMatrix);
-        
-        if (!useStack)
-        {
-            sourceRanges = default;
-            targetRanges = default;
-        }
-
-        return result;
+        return FindCommonSpanWithMatrix(source, target, _sharedMatrix);
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]

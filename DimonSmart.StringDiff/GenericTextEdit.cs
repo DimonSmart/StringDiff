@@ -14,12 +14,4 @@ public class GenericTextEdit<T>
         InsertedTokens = insertedTokens.ToArray();
         SourceTokens = sourceTokens;
     }
-
-    public GenericTextEdit(int startPosition, IEnumerable<T> deletedTokens, IEnumerable<T> insertedTokens)
-    {
-        StartPosition = startPosition;
-        DeletedTokens = deletedTokens.ToList();
-        InsertedTokens = insertedTokens.ToList();
-        SourceTokens = ReadOnlyMemory<T>.Empty;
-    }
 }

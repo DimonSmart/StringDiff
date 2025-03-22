@@ -9,12 +9,12 @@ public class CharDiff : IStringDiff
         var source = sourceText.AsMemory();
         var target = targetText.AsMemory();
         var edits = new List<GenericTextEditSpan<char>>();
-        DiffSpans(source.Span, target.Span, 0, edits, source);
+        ComputeTextDifferences(source.Span, target.Span, 0, edits, source);
         var stringEdits = edits.Select(e => e.ToGenericTextEdit()).Select(e => e.ToStringEdit()).ToList();
         return new TextDiff(sourceText, targetText, stringEdits);
     }
 
-    private static void DiffSpans(
+    private static void ComputeTextDifferences(
         ReadOnlySpan<char> source,
         ReadOnlySpan<char> target,
         int offset,
@@ -38,7 +38,7 @@ public class CharDiff : IStringDiff
             return;
         }
 
-        var common = TokenSequenceMatcher.GetLongestCommonSubstring(source, target, null);
+        var common = TokenSequenceMatcher.GetLongestCommonSubstring(source, target);
 
         if (common.Length == 0)
         {
@@ -47,7 +47,7 @@ public class CharDiff : IStringDiff
         }
 
         // Process the part before the common substring
-        DiffSpans(
+        ComputeTextDifferences(
             source[..common.SourceStartIndex],
             target[..common.TargetStartIndex],
             offset,
@@ -55,7 +55,7 @@ public class CharDiff : IStringDiff
             sourceMemory);
 
         // Process the part after the common substring
-        DiffSpans(
+        ComputeTextDifferences(
             source[(common.SourceStartIndex + common.Length)..],
             target[(common.TargetStartIndex + common.Length)..],
             offset + common.SourceStartIndex + common.Length,
