@@ -8,9 +8,9 @@ public class CharDiff : IStringDiff
     {
         var source = sourceText.AsMemory();
         var target = targetText.AsMemory();
-        var edits = new List<GenericTextEditSpan<char>>();
+        var edits = new List<GenericTextEdit<char>>();
         ComputeTextDifferences(source.Span, target.Span, 0, edits, source);
-        var stringEdits = edits.Select(e => e.ToGenericTextEdit()).Select(e => e.ToStringEdit()).ToList();
+        var stringEdits = edits.Select(e => e.ToStringEdit()).ToList();
         return new TextDiff(sourceText, targetText, stringEdits);
     }
 
@@ -18,7 +18,7 @@ public class CharDiff : IStringDiff
         ReadOnlySpan<char> source,
         ReadOnlySpan<char> target,
         int offset,
-        List<GenericTextEditSpan<char>> edits,
+        List<GenericTextEdit<char>> edits,
         ReadOnlyMemory<char> sourceMemory)
     {
         if (source.Length == 0 && target.Length == 0)
@@ -28,13 +28,13 @@ public class CharDiff : IStringDiff
 
         if (source.Length == 0)
         {
-            edits.Add(new GenericTextEditSpan<char>(offset, ReadOnlyMemory<char>.Empty, target.ToArray(), sourceMemory));
+            edits.Add(new GenericTextEdit<char>(offset, ReadOnlyMemory<char>.Empty, target.ToArray(), sourceMemory));
             return;
         }
 
         if (target.Length == 0)
         {
-            edits.Add(new GenericTextEditSpan<char>(offset, source.ToArray(), ReadOnlyMemory<char>.Empty, sourceMemory));
+            edits.Add(new GenericTextEdit<char>(offset, source.ToArray(), ReadOnlyMemory<char>.Empty, sourceMemory));
             return;
         }
 
@@ -42,7 +42,7 @@ public class CharDiff : IStringDiff
 
         if (common.Length == 0)
         {
-            edits.Add(new GenericTextEditSpan<char>(offset, source.ToArray(), target.ToArray(), sourceMemory));
+            edits.Add(new GenericTextEdit<char>(offset, source.ToArray(), target.ToArray(), sourceMemory));
             return;
         }
 
