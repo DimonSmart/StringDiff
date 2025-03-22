@@ -1,21 +1,24 @@
-﻿namespace DimonSmart.StringDiff;
+﻿using DimonSmart.StringDiff.Internal;
 
-public class StringDiff(StringDiffOptions? options = null) : IStringDiff
+namespace DimonSmart.StringDiff;
+
+public class StringDiff : IStringDiff
 {
-    public StringDiffOptions? Options { get; } = options;
+    public StringDiffOptions? Options { get; }
+
+    public StringDiff(StringDiffOptions? options = null) => Options = options;
 
     public TextDiff ComputeDiff(string sourceText, string targetText)
     {
-        // If no tokenizer specified, use CharDiff for character-level diffing
-        if (Options?.TokenBoundaryDetector == null)
+        if (Options?.Tokenizer == null)
         {
-            return new CharDiff().ComputeDiff(sourceText, targetText);
+            var charDiff = new CharDiff();
+            return charDiff.ComputeDiff(sourceText, targetText);
         }
 
-        // Use WordDiff with the provided tokenizer
-        var wordDiff = new WordDiff(Options.TokenBoundaryDetector);
-        var wordEdits = wordDiff.ComputeDiff(sourceText, targetText);
-        var result = wordEdits.Select(e => e.ToStringEdit()).ToList();
-        return new TextDiff(sourceText, targetText, result);
+        var wordDiff = new WordDiff(Options.Tokenizer);
+        var genericEdits = wordDiff.ComputeDiff(sourceText, targetText);
+        var textEdits = genericEdits.Select(edit => edit.ToStringEdit()).ToList();
+        return new TextDiff(sourceText, targetText, textEdits);
     }
 }

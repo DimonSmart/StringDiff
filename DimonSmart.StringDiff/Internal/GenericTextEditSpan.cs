@@ -1,4 +1,4 @@
-namespace DimonSmart.StringDiff;
+namespace DimonSmart.StringDiff.Internal;
 
 internal readonly struct GenericTextEditSpan<T>
 {

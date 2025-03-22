@@ -18,7 +18,7 @@ public class StringDiffBenchmarks
         _loremIpsum1KBWith10PercentChanges = GenerateModifiedText(_loremIpsum1KB, 0.1);
         _completelyDifferentText1KB = GenerateCompletelyDifferentText(1024);
         _stringDiff = new StringDiff();
-        _stringDiffWithTokenizer = new StringDiff(new StringDiffOptions(SimpleTokenBoundaryDetector.Instance));
+        _stringDiffWithTokenizer = new StringDiff(new StringDiffOptions(SimpleTokenizer.Instance));
     }
 
     [Benchmark(Description = "Identical 1KB text - Character level")]
@@ -73,7 +73,7 @@ public class StringDiffBenchmarks
         var words = source.Split(' ');
         var random = new Random(42); // Fixed seed for reproducibility
         var wordsToChange = (int)(words.Length * changeRatio);
-        
+
         for (var i = 0; i < wordsToChange; i++)
         {
             var idx = random.Next(words.Length);

@@ -1,19 +1,14 @@
-using System;
-using System.Collections.Generic;
+namespace DimonSmart.StringDiff.Internal;
 
-namespace DimonSmart.StringDiff;
-
-internal class WordDiff
+internal class WordDiff(ITokenizer tokenizer)
 {
     private const int StackAllocThreshold = 256;
-    public ITokenBoundaryDetector Tokenizer { get; }
-    private ReadOnlyMemory<string> _sourceTokensMemory;
-
-    public WordDiff(ITokenBoundaryDetector tokenizer)
-    {
-        Tokenizer = tokenizer;
-        _sourceTokensMemory = ReadOnlyMemory<string>.Empty;
-    }
+    private static readonly ReadOnlyMemory<string> EmptyMemoryString = ReadOnlyMemory<string>.Empty;
+    public ITokenizer Tokenizer { get; } = tokenizer;
+    private ReadOnlyMemory<string> _sourceTokensMemory = EmptyMemoryString;
+    private readonly ReadOnlyMemory<string> _targetTokensMemory;
+    private readonly int[] _sourceToTargetMap = Array.Empty<int>();
+    private readonly int[] _targetToSourceMap = Array.Empty<int>();
 
     public IReadOnlyCollection<GenericTextEdit<string>> ComputeDiff(string sourceText, string targetText)
     {
@@ -52,17 +47,20 @@ internal class WordDiff
         int offset,
         List<GenericTextEditSpan<string>> edits)
     {
-        if (source.Length == 0 && target.Length == 0) return;
+        if (source.Length == 0 && target.Length == 0)
+        {
+            return;
+        }
 
         if (source.Length == 0)
         {
-            edits.Add(new GenericTextEditSpan<string>(offset, ReadOnlyMemory<string>.Empty, target, _sourceTokensMemory));
+            edits.Add(new GenericTextEditSpan<string>(offset, EmptyMemoryString, target, _sourceTokensMemory));
             return;
         }
 
         if (target.Length == 0)
         {
-            edits.Add(new GenericTextEditSpan<string>(offset, source, ReadOnlyMemory<string>.Empty, _sourceTokensMemory));
+            edits.Add(new GenericTextEditSpan<string>(offset, source, EmptyMemoryString, _sourceTokensMemory));
             return;
         }
 
@@ -105,7 +103,7 @@ internal class WordDiff
             {
                 // Try to find the longest common sequence starting at these positions
                 var length = 0;
-                while (i + length < source.Length && 
+                while (i + length < source.Length &&
                        j + length < target.Length &&
                        source[i + length] == target[j + length])
                 {

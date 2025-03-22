@@ -3,7 +3,7 @@ using Xunit;
 
 namespace DimonSmart.StringDiffTests
 {
-    public class DefaultTokenBoundaryDetectorTests
+    public class SimpleTokenizerTests
     {
         [Theory]
         [InlineData("hello world", new[] { "hello", " ", "world" })]
@@ -12,10 +12,18 @@ namespace DimonSmart.StringDiffTests
         [InlineData("example", new[] { "example" })]
         [InlineData("abc abcde", new[] { "abc", " ", "abcde" })]
         [InlineData("abcde", new[] { "abcde" })]
-        public void Tokenize_ShouldReturnCorrectTokens(string input, string[] expected)
+        public void TokenizeSpan_ShouldReturnCorrectTokens(string input, string[] expected)
         {
-            var tokens = SimpleTokenBoundaryDetector.Instance.TokenizeToStrings(input);
-            Assert.Equal(expected, tokens);
+            var ranges = new Range[100];
+            SimpleTokenizer.Instance.TokenizeSpan(input, ranges, out var count);
+
+            var actual = new string[count];
+            for (int i = 0; i < count; i++)
+            {
+                actual[i] = input[ranges[i]].ToString();
+            }
+
+            Assert.Equal(expected, actual);
         }
     }
 }

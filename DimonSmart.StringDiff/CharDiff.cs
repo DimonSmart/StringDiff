@@ -1,21 +1,17 @@
+using DimonSmart.StringDiff.Internal;
+
 namespace DimonSmart.StringDiff;
 
 public class CharDiff : IStringDiff
 {
     public TextDiff ComputeDiff(string sourceText, string targetText)
     {
-        var charEdits = ComputeCharacterDiff(sourceText, targetText);
-        var stringEdits = charEdits.Select(e => e.ToStringEdit()).ToList();
-        return new TextDiff(sourceText, targetText, stringEdits);
-    }
-
-    private static IReadOnlyCollection<GenericTextEdit<char>> ComputeCharacterDiff(string sourceText, string targetText)
-    {
         var source = sourceText.AsMemory();
         var target = targetText.AsMemory();
         var edits = new List<GenericTextEditSpan<char>>();
         DiffSpans(source.Span, target.Span, 0, edits, source);
-        return edits.Select(e => e.ToGenericTextEdit()).ToList();
+        var stringEdits = edits.Select(e => e.ToGenericTextEdit()).Select(e => e.ToStringEdit()).ToList();
+        return new TextDiff(sourceText, targetText, stringEdits);
     }
 
     private static void DiffSpans(
@@ -25,7 +21,10 @@ public class CharDiff : IStringDiff
         List<GenericTextEditSpan<char>> edits,
         ReadOnlyMemory<char> sourceMemory)
     {
-        if (source.Length == 0 && target.Length == 0) return;
+        if (source.Length == 0 && target.Length == 0)
+        {
+            return;
+        }
 
         if (source.Length == 0)
         {

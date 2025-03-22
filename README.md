@@ -50,20 +50,26 @@ foreach (var edit in textDiff.Edits)
 
 ### Custom Options
 
-You can customize the behavior of the diff algorithm by providing `StringDiffOptions`.
+You can customize the behavior of the diff algorithm by providing `StringDiffOptions`:
 
 ```csharp
 using DimonSmart.StringDiff;
 
-// Create custom options
-var options = new StringDiffOptions(10, DefaultTokenBoundaryDetector.Instance);
+// Create custom options with a tokenizer and entity detectors
+var options = new StringDiffOptions(
+    SimpleTokenizer.Instance,
+    new IEntityDetector[] 
+    { 
+        new EmailEntityDetector(),
+        new PhoneEntityDetector()
+    });
 
 // Create an instance of StringDiff with custom options
 var stringDiff = new StringDiff(options);
 
 // Compute the differences between two strings
-var sourceText = "123-456-7890";
-var targetText = "123-456-0000";
+var sourceText = "Contact me at old@email.com or 123-456-7890";
+var targetText = "Contact me at new@email.com or 999-888-7777";
 var textDiff = stringDiff.ComputeDiff(sourceText, targetText);
 
 // Display the differences
@@ -136,8 +142,8 @@ The `StringDiffOptions` record allows customization of the diff algorithm.
 
 #### Parameters
 
-- `MinCommonLength (int)`: Forces the differ to report longer changes. For example, if set to 10 (phone number length), the differ will prefer not to report single-letter changes.
-- `TokenBoundaryDetector (ITokenBoundaryDetector<string>?)`: The token boundary detector to use for detecting word or other token boundaries. If `null`, the default character-by-character tokenization will be used.
+- `Tokenizer (ITokenizer?)`: The tokenizer to use for splitting text into tokens. If `null`, the default SimpleTokenizer will be used.
+- `EntityDetectors (IEnumerable<IEntityDetector>?)`: Optional collection of entity detectors for recognizing special tokens like emails or phone numbers.
 
 ### TextDiff Class
 
@@ -159,103 +165,80 @@ The `TextEdit` class represents a single text edit.
 - `int Length`: The length of the text to be replaced.
 - `string Replacement`: The replacement text.
 
-### ITokenBoundaryDetector Interface
+## Tokenization Architecture
 
-The `ITokenBoundaryDetector<T>` interface defines a method for tokenizing input text into a sequence of tokens of type T.
+The library uses a two-level tokenization system:
 
-#### Methods
+1. Base Tokenization (ITokenizer)
+   - Handles basic text tokenization (words, spaces, punctuation)
+   - Implemented by SimpleTokenizer (default)
+   - Can be replaced with custom implementations
 
-- `HashSet<int> Detect(string s)`: Detects word boundaries in the specified string and returns a set of boundary indices.
+2. Entity Detection (IEntityDetector)
+   - Detects special entities that should be treated as atomic units
+   - Multiple detectors can be used together
+   - Built-in detectors:
+     - EmailEntityDetector (recognizes email addresses)
+     - PhoneEntityDetector (recognizes phone numbers)
 
-### DefaultTokenBoundaryDetector Class
+### SimpleTokenizer
 
-The `DefaultTokenBoundaryDetector` class provides a default implementation of `ITokenBoundaryDetector<string>` that splits text into word-like tokens.
-
-#### Constructors
-
-- `DefaultTokenBoundaryDetector()`: Initializes a new instance that splits text into words and non-word tokens.
-
-### StringReconstructor Class
-
-The `StringReconstructor` class helps to reconstruct the target string from the source string and a list of text edits. This class also provides methods for formatting the changes.
-
-#### Methods
-
-- `string Reconstruct(IReadOnlyCollection<TextEdit> edits, string source)`: Reconstructs the target string from the source string and a list of text edits.
-
-#### Overridable Methods
-
-- `protected virtual string FormatInsertedText(string text)`: Formats the inserted text. Default implementation returns the text as is.
-- `protected virtual string FormatDeletedText(string text)`: Formats the deleted text. Default implementation returns an empty string.
-- `protected virtual string FormatModifiedText(string oldText, string newText)`: Formats the modified text. Default implementation returns the new text.
-
-### MarkdownStringReconstructor Class
-
-The `MarkdownStringReconstructor` class extends the `StringReconstructor` class to provide Markdown formatting for changes.
-
-#### Overridable Methods
-
-- `protected override string FormatInsertedText(string text)`: Formats the inserted text using Markdown bold syntax (`**text**`).
-- `protected override string FormatDeletedText(string text)`: Formats the deleted text using Markdown strikethrough syntax (`~~text~~`).
-- `protected override string FormatModifiedText(string oldText, string newText)`: Formats the modified text using both Markdown strikethrough and bold syntax (`~~oldText~~**newText**`).
-
-## Tokenizers
-
-The library provides several specialized tokenizers that can be used to customize how text is split for comparison:
-
-### SimpleTokenBoundaryDetector
-
-The default tokenizer that splits text into words and non-word tokens. It uses `char.IsLetterOrDigit` to determine word boundaries.
+The default tokenizer that splits text into words and non-word tokens using `char.IsLetterOrDigit`.
 
 ```csharp
-var detector = SimpleTokenBoundaryDetector.Instance;
+var tokenizer = SimpleTokenizer.Instance;
 ```
 
-### EmailTokenBoundaryDetector
+### Entity Detectors
 
-Specialized tokenizer that recognizes email addresses as single tokens.
+Specialized detectors for recognizing entities that should be kept as single tokens:
 
 ```csharp
-var detector = new EmailTokenBoundaryDetector();
-// Example: "Contact me at user@example.com" 
-// Tokens: ["Contact", " ", "me", " ", "at", " ", "user@example.com"]
+// Email detector
+var emailDetector = new EmailEntityDetector();
+// Recognizes: "user@example.com" as a single token
+
+// Phone detector
+var phoneDetector = new PhoneEntityDetector();
+// Recognizes: "+1-555-567-8900" as a single token
 ```
 
-### PhoneTokenBoundaryDetector
+### TokenProcessor
 
-Specialized tokenizer that recognizes phone numbers as single tokens. Supports various phone number formats:
-- International format with '+' prefix
-- Numbers with spaces or hyphens
-- Minimum 8 digits required
+Combines a base tokenizer with multiple entity detectors:
 
 ```csharp
-var detector = new PhoneTokenBoundaryDetector();
-// Example: "Call +1-555-567-8900" 
-// Tokens: ["Call", " ", "+1-555-567-8900"]
+var processor = new TokenProcessor(
+    SimpleTokenizer.Instance,
+    new IEntityDetector[] 
+    { 
+        new EmailEntityDetector(),
+        new PhoneEntityDetector()
+    });
+
+// Example: "Contact user@example.com" 
+// Tokens: ["Contact", " ", "user@example.com"]
 ```
 
-### CompositeTokenBoundaryDetector
+### Custom Implementations
 
-Combines multiple tokenizers with priority ordering. When token ranges overlap, the first detector's tokens take precedence.
-
-```csharp
-var composite = new CompositeTokenBoundaryDetector(
-    new ITokenBoundaryDetector[]
-    {
-        new EmailTokenBoundaryDetector(),
-        new PhoneTokenBoundaryDetector()
-    }
-);
-```
-
-### Custom Tokenizers
-
-You can implement custom tokenizers by implementing the `ITokenBoundaryDetector` interface:
+You can implement custom tokenizers and entity detectors:
 
 ```csharp
-public interface ITokenBoundaryDetector
+public class MyTokenizer : ITokenizer
 {
-    void TokenizeSpan(ReadOnlySpan<char> text, Span<Range> tokenRanges, out int tokenCount);
+    public void TokenizeSpan(ReadOnlySpan<char> text, Span<Range> tokenRanges, out int tokenCount)
+    {
+        // Your tokenization logic here
+    }
+}
+
+public class MyEntityDetector : IEntityDetector
+{
+    public void DetectEntities(ReadOnlySpan<char> text, Span<Range> entityRanges, out int entityCount)
+    {
+        // Your entity detection logic here
+    }
 }
 ```
 

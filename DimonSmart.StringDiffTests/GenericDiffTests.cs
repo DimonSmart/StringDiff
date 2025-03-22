@@ -6,7 +6,7 @@ namespace DimonSmart.StringDiffTests
 {
     public class GenericDiffTests
     {
-        private class RegexTokenBoundaryDetector : ITokenBoundaryDetector
+        private class RegexTokenizer : ITokenizer
         {
             public void TokenizeSpan(ReadOnlySpan<char> text, Span<Range> tokenRanges, out int tokenCount)
             {
@@ -42,7 +42,7 @@ namespace DimonSmart.StringDiffTests
         [InlineData("1234567890", "0987654321")]
         public void ComputeDiff_ShouldRespectCharacterBoundaries(string source, string target)
         {
-            var tokenizer = new RegexTokenBoundaryDetector();
+            var tokenizer = new RegexTokenizer();
             var stringDiff = new StringDiff.StringDiff(new StringDiffOptions(tokenizer));
             var textDiff = stringDiff.ComputeDiff(source, target);
             var reconstructed = Reconstruct(textDiff.Edits, source);

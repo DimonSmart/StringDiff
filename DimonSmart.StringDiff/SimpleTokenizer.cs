@@ -1,8 +1,8 @@
 namespace DimonSmart.StringDiff;
 
-public class SimpleTokenBoundaryDetector : ITokenBoundaryDetector
+public class SimpleTokenizer : ITokenizer
 {
-    public static SimpleTokenBoundaryDetector Instance = new();
+    public static SimpleTokenizer Instance = new();
 
     public void TokenizeSpan(ReadOnlySpan<char> text, Span<Range> tokenRanges, out int tokenCount)
     {

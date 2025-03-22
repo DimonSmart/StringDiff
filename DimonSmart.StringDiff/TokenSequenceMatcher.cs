@@ -19,7 +19,7 @@ public static class TokenSequenceMatcher
         // Clear the existing matrix
         _sharedMatrix.AsSpan(0, requiredSize).Clear();
         
-        if (options?.TokenBoundaryDetector == null)
+        if (options?.Tokenizer == null)
         {
             return FindCommonSpanWithMatrix(source, target, _sharedMatrix);
         }
@@ -31,14 +31,13 @@ public static class TokenSequenceMatcher
         var sourceRanges = useStack ? stackalloc Range[source.Length] : new Range[source.Length];
         var targetRanges = useStack ? stackalloc Range[target.Length] : new Range[target.Length];
 
-        options.TokenBoundaryDetector.TokenizeSpan(source, sourceRanges, out var sourceTokenCount);
-        options.TokenBoundaryDetector.TokenizeSpan(target, targetRanges, out var targetTokenCount);
+        options.Tokenizer.TokenizeSpan(source, sourceRanges, out var sourceTokenCount);
+        options.Tokenizer.TokenizeSpan(target, targetRanges, out var targetTokenCount);
 
         var result = FindCommonRangesWithMatrix(source, target, sourceRanges[..sourceTokenCount], targetRanges[..targetTokenCount], _sharedMatrix);
         
         if (!useStack)
         {
-            // Help the GC by clearing references we no longer need
             sourceRanges = default;
             targetRanges = default;
         }
