@@ -38,7 +38,7 @@ public class CharDiff : IStringDiff
             return;
         }
 
-        var common = TokenSequenceMatcher.GetLongestCommonSubstring(source, target);
+        var common = LongestMatchFinder.GetLongestCommonSubstring(source, target);
 
         if (common.Length == 0)
         {
