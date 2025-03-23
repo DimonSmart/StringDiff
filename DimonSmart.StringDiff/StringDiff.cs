@@ -2,11 +2,9 @@
 
 namespace DimonSmart.StringDiff;
 
-public class StringDiff : IStringDiff
+public class StringDiff(StringDiffOptions? options = null) : IStringDiff
 {
-    public StringDiffOptions? Options { get; }
-
-    public StringDiff(StringDiffOptions? options = null) => Options = options;
+    public StringDiffOptions? Options { get; } = options;
 
     public TextDiff ComputeDiff(string sourceText, string targetText)
     {

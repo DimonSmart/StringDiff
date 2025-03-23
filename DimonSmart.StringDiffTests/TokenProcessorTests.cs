@@ -31,7 +31,7 @@ namespace DimonSmart.StringDiffTests
             processor.TokenizeSpan(input, ranges, out var count);
 
             var actual = new string[count];
-            for (int i = 0; i < count; i++)
+            for (var i = 0; i < count; i++)
             {
                 actual[i] = input[ranges[i]].ToString();
             }
@@ -57,7 +57,7 @@ namespace DimonSmart.StringDiffTests
             // Find email and phone tokens
             var emailToken = "";
             var phoneToken = "";
-            for (int i = 0; i < count; i++)
+            for (var i = 0; i < count; i++)
             {
                 var token = text[ranges[i]].ToString();
                 if (token.Contains('@')) emailToken = token;
@@ -86,7 +86,7 @@ namespace DimonSmart.StringDiffTests
             processor.TokenizeSpan(text, ranges, out var count);
 
             var tokens = new string[count];
-            for (int i = 0; i < count; i++)
+            for (var i = 0; i < count; i++)
             {
                 tokens[i] = text[ranges[i]].ToString();
             }

@@ -20,7 +20,7 @@ namespace DimonSmart.StringDiffTests
             detector.DetectEntities(input, ranges, out var count);
 
             var actual = new string[count];
-            for (int i = 0; i < count; i++)
+            for (var i = 0; i < count; i++)
             {
                 actual[i] = input[ranges[i]].ToString();
             }
